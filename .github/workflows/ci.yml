@@ -23,7 +23,7 @@ jobs:
       client: ${{ steps.filter.outputs.client }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Filter paths
         uses: dorny/paths-filter@v3
         id: filter
@@ -45,7 +45,7 @@ jobs:
         working-directory: ./server
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -70,7 +70,7 @@ jobs:
         working-directory: ./client
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
