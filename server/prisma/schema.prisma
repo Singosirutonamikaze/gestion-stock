@@ -1,0 +1,251 @@
+// ============================================================
+// Gestion de Stock - schema.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STOCK_KEEPER
+  SALES
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  TRANSFER
+}
+
+enum OrderType {
+  PURCHASE
+  SALE
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  SHIPPED
+  RECEIVED
+  CANCELLED
+}
+
+// ------------------------------------------------------------
+// User
+// ------------------------------------------------------------
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(SALES)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockMovements StockMovement[]
+  orders         Order[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------
+// Category
+// ------------------------------------------------------------
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryToSubcategories", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToSubcategories")
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// ------------------------------------------------------------
+// Supplier
+// ------------------------------------------------------------
+
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  contactPerson String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  products Product[]
+  orders   Order[]
+
+  @@map("suppliers")
+}
+
+// ------------------------------------------------------------
+// Warehouse
+// ------------------------------------------------------------
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stocks             Stock[]
+  stockMovements     StockMovement[] @relation("WarehouseMovements")
+  transferMovements  StockMovement[] @relation("RelatedWarehouseMovements")
+  orders             Order[]
+
+  @@map("warehouses")
+}
+
+// ------------------------------------------------------------
+// Product
+// ------------------------------------------------------------
+
+model Product {
+  id             String   @id @default(uuid())
+  sku            String   @unique
+  name           String
+  description    String?
+  unitPrice      Decimal  @db.Decimal(10, 2)
+  costPrice      Decimal  @db.Decimal(10, 2)
+  unit           String
+  categoryId     String
+  supplierId     String?
+  alertThreshold Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+
+  stocks         Stock[]
+  stockMovements StockMovement[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId])
+  @@index([supplierId])
+  @@map("products")
+}
+
+// ------------------------------------------------------------
+// Stock (vue matérialisée, maintenue par le service stock-movements)
+// ------------------------------------------------------------
+
+model Stock {
+  id          String   @id @default(uuid())
+  productId   String
+  warehouseId String
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([productId, warehouseId])
+  @@map("stocks")
+}
+
+// ------------------------------------------------------------
+// StockMovement (source de vérité, immuable)
+// ------------------------------------------------------------
+
+model StockMovement {
+  id                  String       @id @default(uuid())
+  productId           String
+  warehouseId         String
+  type                MovementType
+  quantity            Int
+  reason              String?
+  reference           String?
+  relatedWarehouseId  String?
+  userId              String
+  createdAt           DateTime     @default(now())
+
+  product           Product    @relation(fields: [productId], references: [id])
+  warehouse         Warehouse  @relation("WarehouseMovements", fields: [warehouseId], references: [id])
+  relatedWarehouse  Warehouse? @relation("RelatedWarehouseMovements", fields: [relatedWarehouseId], references: [id])
+  user              User       @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// ------------------------------------------------------------
+// Order
+// ------------------------------------------------------------
+
+model Order {
+  id           String      @id @default(uuid())
+  orderNumber  String      @unique
+  type         OrderType
+  status       OrderStatus @default(DRAFT)
+  supplierId   String?
+  // Décision par défaut : pas d'entité Customer séparée pour l'instant,
+  // un simple champ texte suffit pour une commande de vente (type SALE).
+  // Facile à remplacer par une relation vers un futur modèle Customer.
+  customerName String?
+  warehouseId  String
+  totalAmount  Decimal     @db.Decimal(10, 2) @default(0)
+  createdById  String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  supplier    Supplier?   @relation(fields: [supplierId], references: [id])
+  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id])
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  items       OrderItem[]
+
+  @@index([supplierId])
+  @@index([warehouseId])
+  @@index([status])
+  @@map("orders")
+}
+
+// ------------------------------------------------------------
+// OrderItem
+// ------------------------------------------------------------
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
