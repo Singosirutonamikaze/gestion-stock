@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # --- MISE À JOUR DU SERVEUR (NestJS - Yarn) ---
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    target-branch: "develop-server"
+    # Note : l'écosystème "npm" de Dependabot détecte automatiquement le
+    # gestionnaire de paquets via le lockfile présent dans le dossier
+    # (ici yarn.lock). Il n'existe pas d'écosystème "yarn" séparé, et la
+    # clé "registries" ne sert qu'à référencer des registres privés
+    # déclarés dans un bloc "registries:" à la racine du fichier — elle a
+    # été retirée ici car aucun registre n'est défini.
+
+  # --- MISE À JOUR DU CLIENT (Next.js - npm) ---
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    target-branch: "develop-client"
+
+  # --- MISE À JOUR DE LA RACINE (scripts globaux - npm) ---
+  # ⚠️ Ce bloc suppose qu'il existe un package.json à la racine du repo.
+  # Si ce n'est pas le cas, supprimez ce bloc : Dependabot l'ignorera
+  # silencieusement sinon, mais il est inutile.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    target-branch: "main"
+
+  # --- MISE À JOUR DES ACTIONS GITHUB ---
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -1,0 +1,85 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - main
+      - production-*
+      - develop-*
+  pull_request:
+    branches:
+      - main
+      - production-*
+      - develop-*
+
+jobs:
+  # --- DÉTECTION DES DOSSIERS MODIFIÉS ---
+  # Évite de lancer les tests du serveur quand seul le client a changé
+  # (et inversement), utile vu vos branches dédiées par dossier.
+  changes:
+    name: Detect changed folders
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      client: ${{ steps.filter.outputs.client }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Filter paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+            client:
+              - 'client/**'
+
+  # --- VALIDATION DU SERVEUR (NestJS avec YARN) ---
+  test-server:
+    name: NestJS Server Tests
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # Synchronisé avec votre version locale v24
+          cache: 'yarn'
+          cache-dependency-path: ./server/yarn.lock
+      - name: Install Server Dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run Server Linting
+        run: yarn run lint
+      - name: Run Server Unit Tests
+        run: yarn test
+
+  # --- VALIDATION DU CLIENT (Next.js avec NPM) ---
+  test-client:
+    name: Next.js Client Tests
+    needs: changes
+    if: needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # Synchronisé avec votre version locale v24
+          cache: 'npm'
+          cache-dependency-path: ./client/package-lock.json
+      - name: Install Client Dependencies
+        run: npm ci
+      - name: Run Client Linting
+        run: npm run lint
+      - name: Run Client Build Validation
+        run: npm run build
