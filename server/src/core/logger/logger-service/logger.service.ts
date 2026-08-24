@@ -1,6 +1,5 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import * as winston from 'winston';
-import { TransformableInfo } from 'logform';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 /**
@@ -86,17 +85,7 @@ export class LoggerService implements NestLoggerService {
     return winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       winston.format.colorize(),
-      winston.format.printf((info: TransformableInfo) => {
-        const level = String(info.level);
-        const message = String(info.message);
-        const timestamp = String(info.timestamp);
-        const { context, trace, ...meta } = info;
-        const ctxStr = LoggerService.normalizeContext(context);
-        const ctx = LoggerService.formatContext(ctxStr);
-        const traceStr = LoggerService.normalizeTrace(trace);
-        const metaStr = LoggerService.formatMeta(meta);
-        return `${timestamp} ${level} ${ctx} ${message}${metaStr}${traceStr}`;
-      }),
+      winston.format.simple(),
     );
   }
 
