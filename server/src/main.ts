@@ -53,28 +53,9 @@ function printStartupBanner(env: string, port: number, nodeVersion: string) {
 
 const bootstrapLogger = new LoggerService();
 
-function silenceNestBootstrapLogs() {
-  const originalLog = console.log;
-  console.log = (...args: unknown[]) => {
-    const msg = args.join(' ');
-    if (
-      msg.includes('[NestFactory]') ||
-      msg.includes('[InstanceLoader]') ||
-      msg.includes('[RoutesResolver]') ||
-      msg.includes('[RouterExplorer]') ||
-      msg.includes('[NestApplication]')
-    ) {
-      return;
-    }
-    originalLog.apply(console, args);
-  };
-}
-
 async function bootstrap() {
-  silenceNestBootstrapLogs();
-  
   const app = await NestFactory.create(AppModule, {
-    logger: bootstrapLogger,
+    logger: false,
     bufferLogs: false,
   });
   const customLogger = app.get(LoggerService);
