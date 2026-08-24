@@ -1,5 +1,7 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import boxen from 'boxen';
+import gradient from 'gradient-string';
 import helmet from 'helmet';
 import pc from 'picocolors';
 import { AppModule } from './app.module';
@@ -11,9 +13,45 @@ import { ResponseTransformInterceptor } from './core/interceptors/transform-resp
 import { LoggerService } from './core/logger/logger-service/logger.service';
 import { setupSwagger } from './core/swagger/swagger-config/swagger.config';
 
-async function bootstrap() {
-  const logger = new Logger('Server');
+type EnvColorFn = (text: string) => string;
 
+const ENV_COLORS: Record<string, EnvColorFn> = {
+  PRODUCTION: pc.red,
+  STAGING: pc.yellow,
+};
+
+/**
+ * Affiche une bannière de démarrage stylée dans le terminal.
+ */
+function printStartupBanner(env: string, port: number, nodeVersion: string) {
+  const title = gradient(['#fffff', '#fffff'])('GESTION DE STOCK API');
+  const subtitle = pc.dim('v0.0.1');
+
+  const envColor: EnvColorFn = ENV_COLORS[env] ?? pc.green;
+  const url = `http://localhost:${port}`;
+
+  const rows = [
+    `${pc.bold(title)}  ${subtitle}`,
+    '',
+    `${pc.dim('Status'.padEnd(12))} ${pc.green('●')} ${pc.bold('Online')}`,
+    `${pc.dim('Environment'.padEnd(12))} ${envColor(pc.bold(env))}`,
+    `${pc.dim('URL'.padEnd(12))} ${pc.blue(url)}`,
+    `${pc.dim('Database'.padEnd(12))} ${pc.cyan('PostgreSQL (Prisma 7)')}`,
+    `${pc.dim('Node'.padEnd(12))} ${pc.cyan(nodeVersion)}`,
+  ];
+
+  const box = boxen(rows.join('\n'), {
+    padding: 1,
+    margin: 1,
+    borderStyle: 'round',
+    borderColor: 'cyan',
+    titleAlignment: 'center',
+  });
+
+  process.stdout.write('\n' + box + '\n');
+}
+
+async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
@@ -22,7 +60,7 @@ async function bootstrap() {
 
   const configService = app.get(AppConfigService);
 
-  // Protections de Sécurité HTTP avancées (Helmet HTTP Headers)
+  // Protections de sécurité HTTP avancées (Helmet HTTP Headers)
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -68,7 +106,7 @@ async function bootstrap() {
     }),
   );
 
-  // Documentation Swagger uniquement en mode developpement
+  // Documentation Swagger uniquement en mode développement
   if (configService.nodeEnv !== 'production') {
     setupSwagger(app);
   }
@@ -78,57 +116,9 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  const border = pc.cyan(
-    '┌──────────────────────────────────────────────────────────┐',
-  );
-  const bottomBorder = pc.cyan(
-    '└──────────────────────────────────────────────────────────┘',
-  );
+  printStartupBanner(env, port, process.version);
 
-  console.log('');
-  console.log(border);
-  console.log(
-    pc.cyan('│') +
-      pc.bold(pc.white('  GESTION DE STOCK API ')) +
-      pc.dim(`v0.0.1`) +
-      ' '.repeat(30) +
-      pc.cyan('│'),
-  );
-  console.log(
-    pc.cyan('├──────────────────────────────────────────────────────────┤'),
-  );
-  console.log(
-    pc.cyan('│') +
-      `  Status      : ` +
-      pc.green(pc.bold('ONLINE')) +
-      ' '.repeat(39) +
-      pc.cyan('│'),
-  );
-  console.log(
-    pc.cyan('│') +
-      `  Environment : ` +
-      pc.yellow(pc.bold(env)) +
-      ' '.repeat(45 - env.length) +
-      pc.cyan('│'),
-  );
-  console.log(
-    pc.cyan('│') +
-      `  URL         : ` +
-      pc.blue(`http://localhost:${port}`) +
-      ' '.repeat(33 - String(port).length) +
-      pc.cyan('│'),
-  );
-  console.log(
-    pc.cyan('│') +
-      `  Database    : ` +
-      pc.magenta('PostgreSQL (Prisma 7)') +
-      ' '.repeat(24) +
-      pc.cyan('│'),
-  );
-  console.log(bottomBorder);
-  console.log('');
-
-  logger.log(`Server successfully started on port ${port}`);
+  customLogger.log(`Server successfully started on port ${port}`);
 }
 
 void bootstrap();

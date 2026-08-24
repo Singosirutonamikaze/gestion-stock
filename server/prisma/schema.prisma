@@ -1,5 +1,5 @@
 // ============================================================
-// Gestion de Stock - schema.prisma
+// Gestion de Stock - schema.prisma (version enrichie / détaillée)
 // ============================================================
 
 generator client {
@@ -8,6 +8,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  //url      = env("DATABASE_URL")
 }
 
 // ------------------------------------------------------------
@@ -15,10 +16,11 @@ datasource db {
 // ------------------------------------------------------------
 
 enum UserRole {
-  ADMIN
+  ADMINISTRATOR
   MANAGER
   STOCK_KEEPER
   SALES
+  VIEWER
 }
 
 enum MovementType {
@@ -26,6 +28,9 @@ enum MovementType {
   OUT
   ADJUSTMENT
   TRANSFER
+  RETURN
+  LOSS
+  SCRAP
 }
 
 enum OrderType {
@@ -38,7 +43,92 @@ enum OrderStatus {
   CONFIRMED
   SHIPPED
   RECEIVED
+  PARTIALLY_RECEIVED
   CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  MOBILE_MONEY
+  CHECK
+  CREDIT
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+  OUT_OF_STOCK
+  COMING_SOON
+}
+
+enum WarehouseType {
+  MAIN
+  SECONDARY
+  VIRTUAL
+  RETAIL_STORE
+  TRANSIT
+}
+
+enum WeightUnit {
+  G
+  KG
+  LB
+}
+
+enum DimensionUnit {
+  CM
+  M
+  IN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum SerialStatus {
+  IN_STOCK
+  RESERVED
+  SOLD
+  RETURNED
+  DEFECTIVE
+  LOST
+}
+
+// ------------------------------------------------------------
+// Address (réutilisable : fournisseurs, entrepôts, clients, commandes)
+// ------------------------------------------------------------
+
+model Address {
+  id         String   @id @default(uuid())
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String?
+  country    String
+  latitude   Decimal? @db.Decimal(9, 6)
+  longitude  Decimal? @db.Decimal(9, 6)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  suppliers  Supplier[]
+  warehouses Warehouse[]
+  customers  Customer[]
+  orders     Order[]     @relation("OrderShippingAddress")
+
+  @@map("addresses")
 }
 
 // ------------------------------------------------------------
@@ -46,18 +136,24 @@ enum OrderStatus {
 // ------------------------------------------------------------
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  role      UserRole @default(SALES)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  email       String    @unique
+  password    String
+  firstName   String
+  lastName    String
+  phone       String?
+  avatarUrl   String?
+  role        UserRole  @default(SALES)
+  department  String?
+  jobTitle    String?
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  stockMovements StockMovement[]
-  orders         Order[]
+  stockMovements    StockMovement[]
+  orders            Order[]
+  managedWarehouses Warehouse[]     @relation("WarehouseManager")
 
   @@map("users")
 }
@@ -67,18 +163,24 @@ model User {
 // ------------------------------------------------------------
 
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String   @unique
+  slug         String   @unique
+  description  String?
+  imageUrl     String?
+  icon         String?
+  parentId     String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   parent   Category?  @relation("CategoryToSubcategories", fields: [parentId], references: [id])
   children Category[] @relation("CategoryToSubcategories")
 
   products Product[]
 
+  @@index([parentId])
   @@map("categories")
 }
 
@@ -89,17 +191,56 @@ model Category {
 model Supplier {
   id            String   @id @default(uuid())
   name          String
+  logoUrl       String?
   email         String?
   phone         String?
-  address       String?
+  website       String?
+  taxId         String?
   contactPerson String?
+  contactEmail  String?
+  contactPhone  String?
+  paymentTerms  String? // ex: "30 jours net"
+  currency      String   @default("XOF")
+  rating        Decimal? @db.Decimal(2, 1) // ex: 4.5 / 5
+  notes         String?
+  addressId     String?
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  address  Address?  @relation(fields: [addressId], references: [id])
   products Product[]
   orders   Order[]
+  batches  Batch[]
 
+  @@index([addressId])
   @@map("suppliers")
+}
+
+// ------------------------------------------------------------
+// Customer (séparé, pour usage réel des commandes de vente)
+// ------------------------------------------------------------
+
+model Customer {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  companyName String?
+  email       String?  @unique
+  phone       String?
+  avatarUrl   String?
+  addressId   String?
+  taxId       String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  address Address? @relation(fields: [addressId], references: [id])
+  orders  Order[]
+
+  @@index([addressId])
+  @@map("customers")
 }
 
 // ------------------------------------------------------------
@@ -107,19 +248,93 @@ model Supplier {
 // ------------------------------------------------------------
 
 model Warehouse {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   name      String
-  location  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  code      String        @unique
+  type      WarehouseType @default(MAIN)
+  addressId String?
+  phone     String?
+  email     String?
+  managerId String?
+  capacity  Int? // capacité max en unités
+  surfaceM2 Decimal?      @db.Decimal(10, 2)
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  address Address? @relation(fields: [addressId], references: [id])
+  manager User?    @relation("WarehouseManager", fields: [managerId], references: [id])
 
   stocks            Stock[]
   stockMovements    StockMovement[] @relation("WarehouseMovements")
   transferMovements StockMovement[] @relation("RelatedWarehouseMovements")
   orders            Order[]
+  batches           Batch[]
+  serialNumbers     SerialNumber[]
 
+  @@index([addressId])
+  @@index([managerId])
   @@map("warehouses")
+}
+
+// ------------------------------------------------------------
+// Warehouse Location (allée / étagère / bac - emplacement précis)
+// ------------------------------------------------------------
+
+model WarehouseLocation {
+  id          String   @id @default(uuid())
+  warehouseId String
+  aisle       String?
+  shelf       String?
+  bin         String?
+  label       String // ex: "A-03-B" généré ou saisi
+  createdAt   DateTime @default(now())
+
+  stocks Stock[]
+
+  @@unique([warehouseId, label])
+  @@map("warehouse_locations")
+}
+
+// ------------------------------------------------------------
+// Brand
+// ------------------------------------------------------------
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  logoUrl   String?
+  website   String?
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@map("brands")
+}
+
+// ------------------------------------------------------------
+// Tag (mots-clés libres pour recherche/filtrage produit)
+// ------------------------------------------------------------
+
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
 }
 
 // ------------------------------------------------------------
@@ -127,30 +342,135 @@ model Warehouse {
 // ------------------------------------------------------------
 
 model Product {
-  id             String   @id @default(uuid())
-  sku            String   @unique
-  name           String
-  description    String?
-  unitPrice      Decimal  @db.Decimal(10, 2)
-  costPrice      Decimal  @db.Decimal(10, 2)
-  unit           String
-  categoryId     String
-  supplierId     String?
-  alertThreshold Int      @default(0)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String  @id @default(uuid())
+  sku              String  @unique
+  barcode          String? @unique // EAN-13 / UPC / Code-barres interne
+  name             String
+  slug             String  @unique
+  description      String?
+  shortDescription String?
+
+  categoryId String
+  brandId    String?
+  supplierId String?
+
+  unitPrice    Decimal @db.Decimal(10, 2)
+  costPrice    Decimal @db.Decimal(10, 2)
+  currency     String  @default("XOF")
+  taxRate      Decimal @default(0) @db.Decimal(5, 2) // %
+  discountRate Decimal @default(0) @db.Decimal(5, 2) // %
+
+  unit          String // pièce, kg, litre, boîte, carton...
+  weight        Decimal?       @db.Decimal(10, 3)
+  weightUnit    WeightUnit?    @default(KG)
+  length        Decimal?       @db.Decimal(10, 2)
+  width         Decimal?       @db.Decimal(10, 2)
+  height        Decimal?       @db.Decimal(10, 2)
+  dimensionUnit DimensionUnit? @default(CM)
+  color         String?
+  material      String?
+
+  status         ProductStatus @default(ACTIVE)
+  isActive       Boolean       @default(true)
+  isPerishable   Boolean       @default(false)
+  isSerialized   Boolean       @default(false) // suivi par numéro de série (électronique, etc.)
+  requiresBatch  Boolean       @default(false) // suivi par lot (péremption, pharma, agro...)
+  warrantyMonths Int?
+
+  alertThreshold Int  @default(0) // seuil d'alerte simple (legacy)
+  minStockLevel  Int  @default(0)
+  maxStockLevel  Int?
+  reorderPoint   Int?
+  reorderQty     Int?
+
+  metaTitle       String?
+  metaDescription String?
+  notes           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   category Category  @relation(fields: [categoryId], references: [id])
+  brand    Brand?    @relation(fields: [brandId], references: [id])
   supplier Supplier? @relation(fields: [supplierId], references: [id])
 
+  images         ProductMedia[]
+  variants       ProductVariant[]
+  attributes     ProductAttribute[]
+  tags           ProductTag[]
   stocks         Stock[]
   stockMovements StockMovement[]
   orderItems     OrderItem[]
+  batches        Batch[]
+  serialNumbers  SerialNumber[]
 
   @@index([categoryId])
   @@index([supplierId])
+  @@index([brandId])
   @@map("products")
+}
+
+// ------------------------------------------------------------
+// ProductMedia (images ET vidéos, unifiées avec un type)
+// ------------------------------------------------------------
+
+model ProductMedia {
+  id           String    @id @default(uuid())
+  productId    String
+  type         MediaType @default(IMAGE)
+  url          String
+  thumbnailUrl String? // utile surtout pour les vidéos
+  altText      String?
+  title        String?
+  durationSec  Int? // pour les vidéos
+  position     Int       @default(0)
+  isPrimary    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_media")
+}
+
+// ------------------------------------------------------------
+// ProductAttribute (fiche technique libre : ex "Tension" -> "220V")
+// ------------------------------------------------------------
+
+model ProductAttribute {
+  id        String @id @default(uuid())
+  productId String
+  name      String // ex: "Tension", "Matière", "Origine"
+  value     String
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_attributes")
+}
+
+// ------------------------------------------------------------
+// ProductVariant (déclinaisons : taille, couleur... avec leur propre SKU/stock)
+// ------------------------------------------------------------
+
+model ProductVariant {
+  id         String   @id @default(uuid())
+  productId  String
+  sku        String   @unique
+  barcode    String?  @unique
+  name       String // ex: "Rouge / L"
+  attributes Json // ex: { "couleur": "Rouge", "taille": "L" }
+  unitPrice  Decimal? @db.Decimal(10, 2) // surcharge du prix produit si différent
+  imageUrl   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
 }
 
 // ------------------------------------------------------------
@@ -158,17 +478,70 @@ model Product {
 // ------------------------------------------------------------
 
 model Stock {
-  id          String   @id @default(uuid())
-  productId   String
-  warehouseId String
-  quantity    Int      @default(0)
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(uuid())
+  productId         String
+  warehouseId       String
+  locationId        String?
+  quantity          Int      @default(0)
+  reservedQuantity  Int      @default(0) // réservé pour commandes en cours
+  availableQuantity Int      @default(0) // quantity - reservedQuantity (recalculé)
+  updatedAt         DateTime @updatedAt
+
+  product   Product            @relation(fields: [productId], references: [id])
+  warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
+  location  WarehouseLocation? @relation(fields: [locationId], references: [id])
+
+  @@unique([productId, warehouseId, locationId])
+  @@index([locationId])
+  @@map("stocks")
+}
+
+// ------------------------------------------------------------
+// Batch / Lot (traçabilité, dates de péremption)
+// ------------------------------------------------------------
+
+model Batch {
+  id              String    @id @default(uuid())
+  lotNumber       String
+  productId       String
+  warehouseId     String
+  supplierId      String?
+  quantity        Int
+  manufactureDate DateTime?
+  expirationDate  DateTime?
+  receivedAt      DateTime  @default(now())
+  notes           String?
 
   product   Product   @relation(fields: [productId], references: [id])
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  supplier  Supplier? @relation(fields: [supplierId], references: [id])
 
-  @@unique([productId, warehouseId])
-  @@map("stocks")
+  @@unique([productId, lotNumber, warehouseId])
+  @@index([expirationDate])
+  @@map("batches")
+}
+
+// ------------------------------------------------------------
+// SerialNumber (traçabilité unitaire : électronique, matériel...)
+// ------------------------------------------------------------
+
+model SerialNumber {
+  id           String       @id @default(uuid())
+  productId    String
+  warehouseId  String
+  serialNumber String       @unique
+  status       SerialStatus @default(IN_STOCK)
+  orderItemId  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  product   Product    @relation(fields: [productId], references: [id])
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+
+  @@index([productId])
+  @@index([warehouseId])
+  @@map("serial_numbers")
 }
 
 // ------------------------------------------------------------
@@ -203,27 +576,45 @@ model StockMovement {
 // ------------------------------------------------------------
 
 model Order {
-  id           String      @id @default(uuid())
-  orderNumber  String      @unique
-  type         OrderType
-  status       OrderStatus @default(DRAFT)
-  supplierId   String?
-  // Décision par défaut : pas d'entité Customer séparée pour l'instant,
-  // un simple champ texte suffit pour une commande de vente (type SALE).
-  // Facile à remplacer par une relation vers un futur modèle Customer.
-  customerName String?
-  warehouseId  String
-  totalAmount  Decimal     @default(0) @db.Decimal(10, 2)
-  createdById  String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique
+  type              OrderType
+  status            OrderStatus @default(DRAFT)
+  supplierId        String?
+  customerId        String?
+  // Champ texte conservé en complément du lien Customer, utile pour
+  // les ventes rapides sans création de fiche client.
+  customerName      String?
+  warehouseId       String
+  shippingAddressId String?
 
-  supplier  Supplier?   @relation(fields: [supplierId], references: [id])
-  warehouse Warehouse   @relation(fields: [warehouseId], references: [id])
-  createdBy User        @relation(fields: [createdById], references: [id])
-  items     OrderItem[]
+  subtotal       Decimal @default(0) @db.Decimal(10, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  shippingCost   Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount    Decimal @default(0) @db.Decimal(10, 2)
+
+  paymentStatus PaymentStatus  @default(UNPAID)
+  paymentMethod PaymentMethod?
+
+  expectedDeliveryDate DateTime?
+  shippedAt            DateTime?
+  receivedAt           DateTime?
+  notes                String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier        Supplier?   @relation(fields: [supplierId], references: [id])
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  warehouse       Warehouse   @relation(fields: [warehouseId], references: [id])
+  shippingAddress Address?    @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id])
+  createdBy       User        @relation(fields: [createdById], references: [id])
+  items           OrderItem[]
 
   @@index([supplierId])
+  @@index([customerId])
   @@index([warehouseId])
   @@index([status])
   @@map("orders")
@@ -234,15 +625,20 @@ model Order {
 // ------------------------------------------------------------
 
 model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
-  subtotal  Decimal @db.Decimal(10, 2)
+  id           String  @id @default(uuid())
+  orderId      String
+  productId    String
+  variantId    String?
+  quantity     Int
+  unitPrice    Decimal @db.Decimal(10, 2)
+  discountRate Decimal @default(0) @db.Decimal(5, 2)
+  taxRate      Decimal @default(0) @db.Decimal(5, 2)
+  subtotal     Decimal @db.Decimal(10, 2)
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+
+  serialNumbers SerialNumber[]
 
   @@index([orderId])
   @@index([productId])
