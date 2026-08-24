@@ -52,7 +52,9 @@ function printStartupBanner(env: string, port: number, nodeVersion: string) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
   const customLogger = app.get(LoggerService);
   app.useLogger(customLogger);
 
