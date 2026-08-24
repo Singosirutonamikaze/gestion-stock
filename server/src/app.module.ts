@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './core/config/config-module';
 import { DatabaseModule } from './core/database/database-module';
+import { HealthModule } from './core/health/health-module/health.module';
 import { LoggerModule } from './core/logger/logger-module/logger.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { LoggerModule } from './core/logger/logger-module/logger.module';
     ConfigModule,
     DatabaseModule,
     LoggerModule,
+    HealthModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
