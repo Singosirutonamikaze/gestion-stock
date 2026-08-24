@@ -2,7 +2,7 @@
 # Makefile Server (NestJS / Prisma)
 # ============================================================
 
-.PHONY: help install start dev build lint format test test-watch test-cov test-e2e docker-up docker-down docker-logs db-migrate db-seed db-studio
+.PHONY: help install start dev build lint format test test-watch test-cov test-e2e docker-up docker-down docker-logs db-migrate db-seed db-studio db-backup db-restore
 
 help:
 	@echo "Commandes Server :"
@@ -19,6 +19,8 @@ help:
 	@echo "  make db-migrate  - Applique les migrations Prisma"
 	@echo "  make db-seed     - Execute le script seed"
 	@echo "  make db-studio   - Lance Prisma Studio"
+	@echo "  make db-backup   - Exporte une sauvegarde de la base de donnees et des logs"
+	@echo "  make db-restore  - Restaure la base (usage: make db-restore FILE=backups/fichier.sql.gz)"
 
 install:
 	yarn install
@@ -64,3 +66,9 @@ db-seed:
 
 db-studio:
 	npx prisma studio
+
+db-backup:
+	./scripts/backup.sh
+
+db-restore:
+	./scripts/restore-db.sh $(FILE)

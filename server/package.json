@@ -20,7 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
-    "docker:logs": "docker compose -f docker/docker-compose.yml logs -f"
+    "docker:logs": "docker compose -f docker/docker-compose.yml logs -f",
+    "db:backup": "./scripts/backup.sh",
+    "db:restore": "./scripts/restore-db.sh",
+    "db:reset": "./scripts/db-reset.sh",
+    "check:quality": "./scripts/check-quality.sh",
+    "scaffold": "./scripts/scaffold.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
