@@ -10,7 +10,6 @@ import { GlobalHttpExceptionFilter } from './core/filters/http-exception-filter/
 import { PrismaExceptionFilter } from './core/filters/prisma-exception-filter/prisma-exception.filter';
 import { LoggingInterceptor } from './core/interceptors/logging-interceptor/logging.interceptor';
 import { ResponseTransformInterceptor } from './core/interceptors/transform-response-interceptor/transform-response.interceptor';
-import { LoggerService } from './core/logger/logger-service/logger.service';
 import { setupSwagger } from './core/swagger/swagger-config/swagger.config';
 
 type EnvColorFn = (text: string) => string;
@@ -51,15 +50,11 @@ function printStartupBanner(env: string, port: number, nodeVersion: string) {
   process.stdout.write('\n' + box + '\n');
 }
 
-const bootstrapLogger = new LoggerService();
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: false,
     bufferLogs: false,
   });
-  const customLogger = app.get(LoggerService);
-  app.useLogger(customLogger);
 
   const configService = app.get(AppConfigService);
 
@@ -121,7 +116,7 @@ async function bootstrap() {
 
   printStartupBanner(env, port, process.version);
 
-  customLogger.log(`Server successfully started on port ${port}`);
+  console.log(`\n✓ Server successfully started on port ${port}\n`);
 }
 
 void bootstrap();
