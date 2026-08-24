@@ -65,6 +65,10 @@ Thumbs.db
 # 7. LOGS ET DIAGNOSTICS
 # ==============================================================================
 *.log
+logs/
+**/logs/
+backups/
+**/backups/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

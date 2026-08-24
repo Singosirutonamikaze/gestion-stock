@@ -19,8 +19,14 @@ install:
 dev:
 	npm run dev
 
-build:
-	npm run build
+LOG_DIR := logs
+TIMESTAMP := $(shell date +%Y-%m-%d_%H-%M-%S)
+
+$(LOG_DIR):
+	mkdir -p $(LOG_DIR)
+
+build: $(LOG_DIR)
+	npm run build 2>&1 | tee $(LOG_DIR)/build_$(TIMESTAMP).log
 
 start:
 	npm run start

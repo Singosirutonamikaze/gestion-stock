@@ -4,11 +4,17 @@ import helmet from 'helmet';
 import pc from 'picocolors';
 import { AppModule } from './app.module';
 import { AppConfigService } from './core/config/config-service';
+import { LoggerService } from './core/logger/logger-service/logger.service';
 
 async function bootstrap() {
   const logger = new Logger('Server');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  const customLogger = app.get(LoggerService);
+  app.useLogger(customLogger);
+
   const configService = app.get(AppConfigService);
 
   // Protections de Securite HTTP

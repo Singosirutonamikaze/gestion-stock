@@ -28,8 +28,14 @@ install:
 dev:
 	yarn start:dev
 
-build:
-	yarn build
+LOG_DIR := logs
+TIMESTAMP := $(shell date +%Y-%m-%d_%H-%M-%S)
+
+$(LOG_DIR):
+	mkdir -p $(LOG_DIR)
+
+build: $(LOG_DIR)
+	yarn build 2>&1 | tee $(LOG_DIR)/build_$(TIMESTAMP).log
 
 lint:
 	yarn lint
@@ -37,8 +43,8 @@ lint:
 format:
 	yarn format
 
-test:
-	yarn test
+test: $(LOG_DIR)
+	yarn test 2>&1 | tee $(LOG_DIR)/test_$(TIMESTAMP).log
 
 test-watch:
 	yarn test:watch
