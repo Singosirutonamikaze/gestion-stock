@@ -1,6 +1,184 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Gestion de Stock et Inventaire - API Backend
+
+Auteur  : SINGO Yao Dieu Donne
+Version : 0.0.1
+Stack   : NestJS 11, Prisma 7, PostgreSQL 16, Docker, TypeScript 5
+
+---
+
+## Presentation du Projet
+
+Ce projet constitue le backend complet d'un systeme de gestion de stock
+et d'inventaire destine a un usage professionnel en entreprise.
+
+Il a ete concu pour repondre aux besoins de tracabilite, de gestion
+multi-entrepots, de suivi des mouvements de marchandises (entrees, sorties,
+transferts et ajustements), et de traitement des commandes d'achat et de vente.
+
+L'architecture suit les principes de separation des responsabilites (SRP),
+de modularite et de maintenabilite, en s'appuyant sur les meilleures pratiques
+du developpement backend avec NestJS et TypeScript strict.
+
+Le systeme supporte plusieurs niveaux d'acces (RBAC) avec des roles
+distincts : administrateur, manager, gestionnaire de stock et commercial.
+
+---
+
+## Architecture du Projet
+
+```
+server/
+├── docker/
+│   └── docker-compose.yml          # Services PostgreSQL 16 et pgAdmin 4
+├── prisma/
+│   └── schema.prisma               # Schema de base de donnees complet
+├── src/
+│   ├── core/                       # Couche infrastructure transversale
+│   │   ├── config/                 # Chargement et validation des variables d'environnement
+│   │   ├── database/               # Service Prisma et module de base de donnees
+│   │   ├── filters/                # Filtres d'exception HTTP et Prisma
+│   │   ├── guards/                 # Guards d'authentification JWT et de roles RBAC
+│   │   ├── health/                 # Endpoint de verification de sante de l'API
+│   │   ├── interceptors/           # Intercepteurs de logs et transformation des reponses
+│   │   ├── logger/                 # Service de journalisation centralise
+│   │   ├── pipes/                  # Pipe de validation stricte des donnees entrantes
+│   │   └── swagger/                # Configuration de la documentation OpenAPI Swagger
+│   ├── modules/                    # Modules metier de l'application
+│   │   ├── auth/                   # Authentification, JWT, strategies Passport local et JWT
+│   │   ├── users/                  # Gestion des utilisateurs et attribution des roles
+│   │   ├── categories/             # Categories et sous-categories de produits (hierarchie)
+│   │   ├── suppliers/              # Gestion du referentiel fournisseurs
+│   │   ├── warehouses/             # Gestion des entrepots et sites de stockage
+│   │   ├── products/               # Gestion du catalogue produits avec seuil d'alerte
+│   │   ├── stock/                  # Niveaux de stock consolides par produit et entrepot
+│   │   ├── stock-movements/        # Mouvements d'inventaire immuables (source de verite)
+│   │   └── orders/                 # Commandes d'achat fournisseur et de vente client
+│   └── shared/                     # Elements partages entre tous les modules
+│       ├── exceptions/             # Exceptions metier personnalisees
+│       └── utils/                  # Utilitaires de pagination et helpers generiques
+├── .env                            # Variables d'environnement (confidentiel, non versionne)
+├── .env.example                    # Modele de variables d'environnement a copier
+├── .dockerignore                   # Fichiers exclus du contexte de build Docker
+├── Dockerfile                      # Image Docker multi-stage securisee (USER node)
+├── nest-cli.json                   # Configuration du compilateur NestJS avec plugin Swagger
+├── tsconfig.json                   # Configuration TypeScript stricte (noImplicitAny, etc.)
+├── eslint.config.mjs               # Regles ESLint (no-explicit-any error) et Prettier
+├── SECURITY.md                     # Protocoles et politiques de securite du projet
+└── docs/
+    ├── DATABASE.md                 # Schema de base de donnees et conventions
+    └── TASKS.md                    # Suivi des taches et avancement du projet
+```
+
+---
+
+## Prerequis
+
+- Node.js version 20 ou superieure (LTS recommande)
+- Docker et Docker Compose installes sur la machine
+- npm version 10 ou superieure
+- PostgreSQL 16 (fourni automatiquement via Docker Compose)
+
+---
+
+## Installation et Demarrage
+
+### Etape 1 : Acceder au dossier serveur
+
+```bash
+cd server
+```
+
+### Etape 2 : Configurer les variables d'environnement
+
+Copier le fichier modele et renseigner vos valeurs specifiques :
+
+```bash
+cp .env.example .env
+```
+
+Ouvrir le fichier .env et renseigner les valeurs suivantes :
+- DB_USER : votre identifiant PostgreSQL
+- DB_PASSWORD : votre mot de passe PostgreSQL
+- DB_NAME : nom de la base de donnees (ex: gestion_stock)
+- JWT_SECRET : une chaine aleatoire d'au moins 64 caracteres pour la production
+
+### Etape 3 : Demarrer la base de donnees PostgreSQL via Docker
+
+```bash
+npm run docker:up
+```
+
+Cette commande demarre en arriere-plan :
+- Un conteneur PostgreSQL 16 Alpine sur le port 5432
+- Un conteneur pgAdmin 4 (interface web) sur le port 5050
+
+### Etape 4 : Installer les dependances et generer le client Prisma
+
+```bash
+npm install
+npx prisma generate
+```
+
+La generation du client Prisma est obligatoire avant de lancer l'application.
+Elle produit les types TypeScript correspondant a votre schema de base de donnees.
+
+### Etape 5 : Appliquer les migrations de base de donnees
+
+```bash
+npx prisma migrate dev
+```
+
+Cette commande cree les tables et index dans votre base de donnees PostgreSQL
+en appliquant le schema defini dans prisma/schema.prisma.
+
+### Etape 6 : Lancer le serveur en mode developpement
+
+```bash
+npm run start:dev
+```
+
+Le serveur demarre avec le mode Watch activé (rechargement automatique).
+Un bandeau de demarrage s'affiche dans le terminal avec les informations de connexion.
+
+---
+
+## Scripts Disponibles
+
+| Commande              | Description                                                |
+|-----------------------|------------------------------------------------------------|
+| npm run start:dev     | Lancement en mode developpement avec rechargement auto     |
+| npm run build         | Compilation TypeScript pour la production dans dist/       |
+| npm run start:prod    | Demarrage du serveur compile (necessite npm run build)     |
+| npm run lint          | Verification et correction automatique du style de code    |
+| npm run test          | Execution de tous les tests unitaires Jest                 |
+| npm run test:cov      | Tests unitaires avec rapport de couverture de code HTML    |
+| npm run docker:up     | Demarrage des conteneurs Docker en arriere-plan            |
+| npm run docker:down   | Arret et suppression des conteneurs Docker                 |
+| npm run docker:logs   | Affichage en temps reel des logs des conteneurs Docker     |
+
+---
+
+## Acces aux Interfaces
+
+- API Backend  : http://localhost:3000
+- pgAdmin      : http://localhost:5050
+  - Email        : admin@admin.com
+  - Mot de passe : admin
+
+---
+
+## Documentation Technique
+
+- Schema base de donnees  : docs/DATABASE.md
+- Suivi des taches        : docs/TASKS.md
+- Protocoles de securite  : SECURITY.md
+
+---
+
+## Licence
+
+Projet prive - SINGO Yao Dieu Donne - Tous droits reserves
+
 
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest

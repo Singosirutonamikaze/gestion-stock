@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ------------------------------------------------------------
@@ -115,10 +114,10 @@ model Warehouse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stocks             Stock[]
-  stockMovements     StockMovement[] @relation("WarehouseMovements")
-  transferMovements  StockMovement[] @relation("RelatedWarehouseMovements")
-  orders             Order[]
+  stocks            Stock[]
+  stockMovements    StockMovement[] @relation("WarehouseMovements")
+  transferMovements StockMovement[] @relation("RelatedWarehouseMovements")
+  orders            Order[]
 
   @@map("warehouses")
 }
@@ -142,7 +141,7 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category  @relation(fields: [categoryId], references: [id])
   supplier Supplier? @relation(fields: [supplierId], references: [id])
 
   stocks         Stock[]
@@ -177,21 +176,21 @@ model Stock {
 // ------------------------------------------------------------
 
 model StockMovement {
-  id                  String       @id @default(uuid())
-  productId           String
-  warehouseId         String
-  type                MovementType
-  quantity            Int
-  reason              String?
-  reference           String?
-  relatedWarehouseId  String?
-  userId              String
-  createdAt           DateTime     @default(now())
+  id                 String       @id @default(uuid())
+  productId          String
+  warehouseId        String
+  type               MovementType
+  quantity           Int
+  reason             String?
+  reference          String?
+  relatedWarehouseId String?
+  userId             String
+  createdAt          DateTime     @default(now())
 
-  product           Product    @relation(fields: [productId], references: [id])
-  warehouse         Warehouse  @relation("WarehouseMovements", fields: [warehouseId], references: [id])
-  relatedWarehouse  Warehouse? @relation("RelatedWarehouseMovements", fields: [relatedWarehouseId], references: [id])
-  user              User       @relation(fields: [userId], references: [id])
+  product          Product    @relation(fields: [productId], references: [id])
+  warehouse        Warehouse  @relation("WarehouseMovements", fields: [warehouseId], references: [id])
+  relatedWarehouse Warehouse? @relation("RelatedWarehouseMovements", fields: [relatedWarehouseId], references: [id])
+  user             User       @relation(fields: [userId], references: [id])
 
   @@index([productId])
   @@index([warehouseId])
@@ -214,15 +213,15 @@ model Order {
   // Facile à remplacer par une relation vers un futur modèle Customer.
   customerName String?
   warehouseId  String
-  totalAmount  Decimal     @db.Decimal(10, 2) @default(0)
+  totalAmount  Decimal     @default(0) @db.Decimal(10, 2)
   createdById  String
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  supplier    Supplier?   @relation(fields: [supplierId], references: [id])
-  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id])
-  createdBy   User        @relation(fields: [createdById], references: [id])
-  items       OrderItem[]
+  supplier  Supplier?   @relation(fields: [supplierId], references: [id])
+  warehouse Warehouse   @relation(fields: [warehouseId], references: [id])
+  createdBy User        @relation(fields: [createdById], references: [id])
+  items     OrderItem[]
 
   @@index([supplierId])
   @@index([warehouseId])
