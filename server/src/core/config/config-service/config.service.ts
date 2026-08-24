@@ -80,4 +80,24 @@ export class AppConfigService {
   get clientUrl(): string {
     return this.configService.get<string>('CLIENT_URL', 'http://localhost:3001');
   }
+
+  get swaggerUser(): string | undefined {
+    return this.configService.get<string>('SWAGGER_EMAIL') || this.configService.get<string>('SWAGGER_USER');
+  }
+
+  get swaggerPassword(): string | undefined {
+    return this.configService.get<string>('SWAGGER_PASSWORD');
+  }
+
+  get swaggerTitle(): string {
+    return this.configService.get<string>('SWAGGER_TITLE', 'API Gestion de Stock');
+  }
+
+  get swaggerDescription(): string {
+    return this.configService.get<string>('SWAGGER_DESCRIPTION', 'Documentation officielle de API REST de Gestion de Stock');
+  }
+
+  get swaggerVersion(): string {
+    return this.configService.get<string>('SWAGGER_VERSION', '1.0.0');
+  }
 }

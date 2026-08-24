@@ -41,6 +41,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
+    "express-basic-auth": "^1.2.1",
     "gradient-string": "^3.0.0",
     "helmet": "^8.3.0",
     "ioredis": "^6.0.0",

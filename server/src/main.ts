@@ -106,7 +106,7 @@ async function bootstrap() {
 
   // Documentation Swagger uniquement en mode développement
   if (configService.nodeEnv !== 'production') {
-    setupSwagger(app);
+    setupSwagger(app, configService);
   }
 
   const port = configService.port;
