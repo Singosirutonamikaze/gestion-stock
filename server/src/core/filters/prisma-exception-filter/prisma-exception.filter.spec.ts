@@ -62,7 +62,9 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   });
 
   it('doit inclure le champ error "Conflict" pour P2002', () => {
@@ -70,7 +72,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.error).toBe('Conflict');
   });
 
@@ -79,7 +81,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.error).toBe('Not Found');
   });
 
@@ -88,7 +90,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.error).toBe('Database Error');
   });
 
@@ -97,7 +99,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(typeof body.timestamp).toBe('string');
   });
 
@@ -106,16 +108,18 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.path).toBe('/api/products');
   });
 
   it('doit mentionner les champs cibles dans le message P2002', () => {
-    const exception = buildException('P2002', { target: ['email', 'username'] });
+    const exception = buildException('P2002', {
+      target: ['email', 'username'],
+    });
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.message as string).toContain('email');
     expect(body.message as string).toContain('username');
   });
@@ -125,7 +129,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.statusCode).toBe(HttpStatus.CONFLICT);
   });
 

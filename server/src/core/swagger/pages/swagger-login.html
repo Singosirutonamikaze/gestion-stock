@@ -513,7 +513,8 @@
                   <button
                     type="button"
                     class="toggle-password"
-                    onclick="togglePasswordVisibility()"
+                    id="toggle-password-btn"
+                    aria-label="Afficher ou masquer le mot de passe"
                   >
                     <svg
                       id="eye-icon"
@@ -732,13 +733,20 @@
     <script>
       const now = new Date();
       const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('current-date').textContent =
-        now.toLocaleDateString('fr-FR', options);
-      document.getElementById('copyright-year').textContent = now.getFullYear();
+      const dateElem = document.getElementById('current-date');
+      if (dateElem) {
+        dateElem.textContent = now.toLocaleDateString('fr-FR', options);
+      }
+      const yearElem = document.getElementById('copyright-year');
+      if (yearElem) {
+        yearElem.textContent = now.getFullYear().toString();
+      }
 
       function togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
         const eyeIcon = document.getElementById('eye-icon');
+        if (!passwordInput || !eyeIcon) return;
+
         if (passwordInput.type === 'password') {
           passwordInput.type = 'text';
           eyeIcon.innerHTML =
@@ -748,6 +756,11 @@
           eyeIcon.innerHTML =
             '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
         }
+      }
+
+      const toggleBtn = document.getElementById('toggle-password-btn');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', togglePasswordVisibility);
       }
     </script>
   </body>

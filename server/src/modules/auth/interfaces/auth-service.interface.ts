@@ -1,7 +1,6 @@
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { TokenPair } from '../types/token-pair.type';
-import { RequestMeta } from '../../../shared/types/request-meta.type';
 
 /**
  * Contrat d'interface du service d'authentification (`AuthService`).
@@ -19,12 +18,11 @@ export interface IAuthService {
    * Génère et enregistre une session dans le magasin Redis.
    *
    * @param {LoginDto} dto - Les identifiants de connexion (email, mot de passe)
-   * @param {RequestMeta} meta - Les métadonnées de la requête HTTP (IP, User-Agent)
    * @returns {Promise<TokenPair>} Une promesse résolue avec la paire de jetons JWT (access & refresh)
    * @throws {UnauthorizedException} Si l'email est inconnu, le mot de passe invalide ou le compte inactif
    * @async
    */
-  login(dto: LoginDto, meta: RequestMeta): Promise<TokenPair>;
+  login(dto: LoginDto): Promise<TokenPair>;
 
   /**
    * Enregistre un premier compte administrateur ou un nouvel utilisateur dans le système.
@@ -58,7 +56,11 @@ export interface IAuthService {
    * @returns {Promise<void>}
    * @async
    */
-  logout(userId: string, refreshToken?: string, accessToken?: string): Promise<void>;
+  logout(
+    userId: string,
+    refreshToken?: string,
+    accessToken?: string,
+  ): Promise<void>;
 
   /**
    * Invalide l'intégralité des sessions actives de l'utilisateur sur tous ses appareils.

@@ -86,7 +86,7 @@ describe('ResponseTransformInterceptor', () => {
   });
 
   it('doit appeler handle() exactement une fois', (done) => {
-    const mockNext: CallHandler = {
+    const mockNext = {
       handle: jest.fn().mockReturnValue(of('test')),
     };
 

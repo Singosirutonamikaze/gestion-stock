@@ -13,7 +13,6 @@ import { RegisterDto } from '../dto/register.dto';
 import { TokenPair } from '../types/token-pair.type';
 import { JwtPayload } from '../types/jwt-payload.type';
 import { UserRole } from '../../../shared/enums/user-role-enum';
-import { RequestMeta } from '../../../shared/types/request-meta.type';
 
 /**
  * Service d'authentification gérant les opérations de connexion, d'enregistrement,
@@ -36,16 +35,15 @@ export class AuthService {
    * Authentifie un utilisateur et retourne une paire de tokens JWT.
    *
    * @param {LoginDto} dto - Les identifiants de connexion
-   * @param {RequestMeta} meta - Les métadonnées de la requête (IP, User-Agent)
    * @returns {Promise<TokenPair>} La paire de tokens JWT
    * @throws {UnauthorizedException} Si les identifiants sont invalides ou le compte inactif
    */
-  async login(dto: LoginDto, _meta: RequestMeta): Promise<TokenPair> {
+  async login(dto: LoginDto): Promise<TokenPair> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('Identifiants invalides');
     }
 
@@ -60,7 +58,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const tokenPair = await this.generateTokenPair({
+    const tokenPair = this.generateTokenPair({
       sub: user.id,
       email: user.email,
       role: user.role,
@@ -68,7 +66,11 @@ export class AuthService {
 
     // Enregistrer le refresh token dans Redis (7 jours TTL)
     const refreshTtl = this.parseExpiry(this.configService.jwtRefreshExpiresIn);
-    await this.redisService.setRefreshToken(user.id, tokenPair.refreshToken, refreshTtl);
+    await this.redisService.setRefreshToken(
+      user.id,
+      tokenPair.refreshToken,
+      refreshTtl,
+    );
 
     return tokenPair;
   }
@@ -101,14 +103,18 @@ export class AuthService {
       },
     });
 
-    const tokenPair = await this.generateTokenPair({
+    const tokenPair = this.generateTokenPair({
       sub: user.id,
       email: user.email,
       role: user.role,
     });
 
     const refreshTtl = this.parseExpiry(this.configService.jwtRefreshExpiresIn);
-    await this.redisService.setRefreshToken(user.id, tokenPair.refreshToken, refreshTtl);
+    await this.redisService.setRefreshToken(
+      user.id,
+      tokenPair.refreshToken,
+      refreshTtl,
+    );
 
     return tokenPair;
   }
@@ -143,7 +149,7 @@ export class AuthService {
       where: { id: payload.sub },
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('Compte inactif ou introuvable');
     }
 
@@ -151,14 +157,18 @@ export class AuthService {
     await this.redisService.revokeRefreshToken(user.id, refreshToken);
 
     // Générer une nouvelle paire
-    const tokenPair = await this.generateTokenPair({
+    const tokenPair = this.generateTokenPair({
       sub: user.id,
       email: user.email,
       role: user.role,
     });
 
     const refreshTtl = this.parseExpiry(this.configService.jwtRefreshExpiresIn);
-    await this.redisService.setRefreshToken(user.id, tokenPair.refreshToken, refreshTtl);
+    await this.redisService.setRefreshToken(
+      user.id,
+      tokenPair.refreshToken,
+      refreshTtl,
+    );
 
     return tokenPair;
   }
@@ -171,7 +181,11 @@ export class AuthService {
    * @param {string} [accessToken] - Access token à blacklister (optionnel)
    * @returns {Promise<void>}
    */
-  async logout(userId: string, refreshToken?: string, accessToken?: string): Promise<void> {
+  async logout(
+    userId: string,
+    refreshToken?: string,
+    accessToken?: string,
+  ): Promise<void> {
     if (refreshToken) {
       await this.redisService.revokeRefreshToken(userId, refreshToken);
     }
@@ -195,12 +209,12 @@ export class AuthService {
    * Génère une paire de tokens JWT (access + refresh).
    *
    * @param {Omit<JwtPayload, 'iat' | 'exp'>} payload - Le payload du token
-   * @returns {Promise<TokenPair>} La paire de tokens générée
+   * @returns {TokenPair} La paire de tokens générée
    * @private
    */
-  private async generateTokenPair(
+  private generateTokenPair(
     payload: Omit<JwtPayload, 'iat' | 'exp'>,
-  ): Promise<TokenPair> {
+  ): TokenPair {
     const accessToken = this.jwtService.sign(
       { ...payload },
       {
@@ -230,11 +244,16 @@ export class AuthService {
    * @private
    */
   private parseExpiry(expiry: string): number {
-    const match = expiry.match(/^(\d+)([smhd])$/);
+    const match = /^(\d+)([smhd])$/.exec(expiry);
     if (!match) return 900;
-    const value = parseInt(match[1], 10);
+    const value = Number.parseInt(match[1], 10);
     const unit = match[2];
-    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    const multipliers: Record<string, number> = {
+      s: 1,
+      m: 60,
+      h: 3600,
+      d: 86400,
+    };
     return value * (multipliers[unit] ?? 60);
   }
 }

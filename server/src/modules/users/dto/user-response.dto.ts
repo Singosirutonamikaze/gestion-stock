@@ -10,26 +10,26 @@ import { UserRole } from '../../../shared/enums/user-role-enum';
  */
 export class UserResponseDto {
   @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
-  id: string;
+  id!: string;
 
-  @ApiProperty({ example: 'jean.dupont@entreprise.com' })
-  email: string;
+  @ApiProperty({ example: 'kodjo.koffie@entreprise.com' })
+  email!: string;
 
-  @ApiProperty({ example: 'Jean' })
-  firstName: string;
+  @ApiProperty({ example: 'Kodjo' })
+  firstName!: string;
 
-  @ApiProperty({ example: 'Dupont' })
-  lastName: string;
+  @ApiProperty({ example: 'Koffie' })
+  lastName!: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.SALES })
-  role: UserRole;
+  role!: UserRole;
 
   @ApiProperty({ example: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @ApiProperty({ example: '2026-08-24T12:00:00.000Z' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ example: '2026-08-24T12:00:00.000Z' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

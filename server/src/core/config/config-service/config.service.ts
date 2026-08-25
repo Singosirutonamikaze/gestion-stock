@@ -48,7 +48,10 @@ export class AppConfigService {
 
   get databaseUrl(): string {
     const url = this.configService.get<string>('DATABASE_URL');
-    return url ?? `postgresql://${this.dbUser}:${this.dbPassword}@${this.dbHost}:${this.dbPort}/${this.dbName}?schema=${this.dbSchema}`;
+    return (
+      url ??
+      `postgresql://${this.dbUser}:${this.dbPassword}@${this.dbHost}:${this.dbPort}/${this.dbName}?schema=${this.dbSchema}`
+    );
   }
 
   get redisHost(): string {
@@ -72,23 +75,38 @@ export class AppConfigService {
   }
 
   get jwtAccessExpiresIn(): JwtExpiresString {
-    return this.configService.get<JwtExpiresString>('JWT_ACCESS_EXPIRES_IN', '15m');
+    return this.configService.get<JwtExpiresString>(
+      'JWT_ACCESS_EXPIRES_IN',
+      '15m',
+    );
   }
 
   get jwtRefreshSecret(): string {
-    return this.configService.get<string>('JWT_REFRESH_SECRET', 'refreshSecretKey');
+    return this.configService.get<string>(
+      'JWT_REFRESH_SECRET',
+      'refreshSecretKey',
+    );
   }
 
   get jwtRefreshExpiresIn(): JwtExpiresString {
-    return this.configService.get<JwtExpiresString>('JWT_REFRESH_EXPIRES_IN', '7d');
+    return this.configService.get<JwtExpiresString>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
   }
 
   get clientUrl(): string {
-    return this.configService.get<string>('CLIENT_URL', 'http://localhost:3001');
+    return this.configService.get<string>(
+      'CLIENT_URL',
+      'http://localhost:3001',
+    );
   }
 
   get swaggerUser(): string | undefined {
-    return this.configService.get<string>('SWAGGER_EMAIL') || this.configService.get<string>('SWAGGER_USER');
+    return (
+      this.configService.get<string>('SWAGGER_EMAIL') ||
+      this.configService.get<string>('SWAGGER_USER')
+    );
   }
 
   get swaggerPassword(): string | undefined {
@@ -96,11 +114,17 @@ export class AppConfigService {
   }
 
   get swaggerTitle(): string {
-    return this.configService.get<string>('SWAGGER_TITLE', 'API Gestion de Stock');
+    return this.configService.get<string>(
+      'SWAGGER_TITLE',
+      'API Gestion de Stock',
+    );
   }
 
   get swaggerDescription(): string {
-    return this.configService.get<string>('SWAGGER_DESCRIPTION', 'Documentation officielle de API REST de Gestion de Stock');
+    return this.configService.get<string>(
+      'SWAGGER_DESCRIPTION',
+      'Documentation officielle de API REST de Gestion de Stock',
+    );
   }
 
   get swaggerVersion(): string {

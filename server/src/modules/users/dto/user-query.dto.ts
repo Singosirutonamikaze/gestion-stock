@@ -12,7 +12,10 @@ import { PaginationQueryDto } from '../../../shared/dto';
  * @public
  */
 export class UserQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ example: 'jean', description: 'Recherche par nom ou email' })
+  @ApiPropertyOptional({
+    example: 'kodjo',
+    description: 'Recherche par nom ou email',
+  })
   @IsOptional()
   @IsString()
   search?: string;
@@ -22,7 +25,10 @@ export class UserQueryDto extends PaginationQueryDto {
   @IsEnum(UserRole)
   role?: UserRole;
 
-  @ApiPropertyOptional({ example: true, description: 'Filtrer par statut actif' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Filtrer par statut actif',
+  })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)

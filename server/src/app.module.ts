@@ -10,6 +10,13 @@ import { LoggerModule } from './core/logger/logger-module/logger.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 
+/**
+ * Module racine de l'application assemblant l'ensemble des modules core et fonctionnels.
+ *
+ * @author SINGO Yao Dieu Donnée
+ * @since 0.0.1
+ * @public
+ */
 @Module({
   imports: [
     ConfigModule,

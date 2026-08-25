@@ -26,13 +26,13 @@ describe('ResourceNotFoundException', () => {
     expect(exception.message).toContain('Entrepot');
   });
 
-  it('doit inclure l\'identifiant dans le message', () => {
+  it("doit inclure l'identifiant dans le message", () => {
     const exception = new ResourceNotFoundException('Produit', 'prod-xyz');
 
     expect(exception.message).toContain('prod-xyz');
   });
 
-  it('doit inclure l\'identifiant numerique dans le message', () => {
+  it("doit inclure l'identifiant numerique dans le message", () => {
     const exception = new ResourceNotFoundException('Utilisateur', 99);
 
     expect(exception.message).toContain('99');

@@ -37,12 +37,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * @returns {Promise<JwtPayload>} Le payload validé attaché à `req.user`
    * @throws {UnauthorizedException} Si le payload est invalide ou le token révoqué
    */
-  async validate(req: Request, payload: Record<string, unknown>): Promise<JwtPayload> {
+  async validate(
+    req: Request,
+    payload: Record<string, unknown>,
+  ): Promise<JwtPayload> {
     const rawToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
     if (rawToken) {
-      const isBlacklisted = await this.redisService.isAccessTokenBlacklisted(rawToken);
+      const isBlacklisted =
+        await this.redisService.isAccessTokenBlacklisted(rawToken);
       if (isBlacklisted) {
-        throw new UnauthorizedException('Jeton d\'accès révoqué');
+        throw new UnauthorizedException("Jeton d'accès révoqué");
       }
     }
 

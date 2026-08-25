@@ -3,6 +3,8 @@ import { User } from '@prisma/client';
 import { PrismaService } from '../../../core/database/prisma-service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UserQueryDto } from '../dto/user-query.dto';
+import { UserStatisticsDto } from '../dto/user-statistics.dto';
+import { UserRole } from '../../../shared/enums/user-role-enum';
 import { IUsersRepository } from '../interfaces/users-repository.interface';
 
 /**
@@ -147,5 +149,77 @@ export class UsersRepository implements IUsersRepository {
       where: { id },
       data: { isActive: false },
     });
+  }
+
+  /**
+   * Calcule les métriques globales et agrégations des utilisateurs avec Prisma.
+   *
+   * @param {Date} [startDate] - Date de début optionnelle
+   * @param {Date} [endDate] - Date de fin optionnelle
+   * @returns {Promise<UserStatisticsDto>} Métriques consolidées
+   * @async
+   */
+  async getStatistics(
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<UserStatisticsDto> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const hasDateRange = startDate !== undefined || endDate !== undefined;
+
+    const [
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      roleGroups,
+      recentRegistrationsLast30Days,
+      createdInRange,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.user.count({ where: { isActive: false } }),
+      this.prisma.user.groupBy({
+        by: ['role'],
+        _count: { id: true },
+      }),
+      this.prisma.user.count({
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      }),
+      hasDateRange
+        ? this.prisma.user.count({
+            where: {
+              createdAt: {
+                ...(startDate && { gte: startDate }),
+                ...(endDate && { lte: endDate }),
+              },
+            },
+          })
+        : Promise.resolve(undefined),
+    ]);
+
+    const byRole = Object.values(UserRole).reduce<Record<UserRole, number>>(
+      (acc, role) => {
+        acc[role] = 0;
+        return acc;
+      },
+      {} as Record<UserRole, number>,
+    );
+
+    for (const group of roleGroups) {
+      const role = group.role;
+      if (role in byRole) {
+        byRole[role] = group._count.id;
+      }
+    }
+
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      byRole,
+      recentRegistrationsLast30Days,
+      ...(createdInRange !== undefined && { createdInRange }),
+    };
   }
 }

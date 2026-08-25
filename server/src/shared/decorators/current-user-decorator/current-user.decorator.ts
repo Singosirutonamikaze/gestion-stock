@@ -1,12 +1,13 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { JwtPayload } from '../../../modules/auth/types/jwt-payload.type';
 
 /**
  * Décorateur de paramètre personnalisé permettant d'extraire l'utilisateur courant
  * (payload JWT décodé) depuis la requête HTTP NestJS.
  *
- * @param {string} [data] - Propriété spécifique de l'utilisateur à extraire (optionnel)
+ * @param {keyof JwtPayload} [data] - Propriété spécifique du payload à extraire (optionnel)
  * @param {ExecutionContext} ctx - Contexte d'exécution de la requête NestJS
- * @returns {any} L'objet utilisateur complet ou la valeur de la propriété demandée
+ * @returns {JwtPayload | JwtPayload[keyof JwtPayload] | undefined} L'objet utilisateur complet ou la valeur demandée
  *
  * @example
  * // Dans un contrôleur :
@@ -14,12 +15,21 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
  * getEmail(@CurrentUser('email') email: string) { ... }
  */
 export const CurrentUser = createParamDecorator(
-  (data: string | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    const user = request.user;
+  (
+    data: keyof JwtPayload | undefined,
+    ctx: ExecutionContext,
+  ): JwtPayload | JwtPayload[keyof JwtPayload] | undefined => {
+    const request = ctx.switchToHttp().getRequest<{ user?: JwtPayload }>();
+    const user = request?.user;
 
-    const value = data ? user?.[data] : user;
+    if (!user) {
+      return undefined;
+    }
 
-    return value;
+    if (data) {
+      return user[data];
+    }
+
+    return user;
   },
 );

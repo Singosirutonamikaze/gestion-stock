@@ -21,12 +21,12 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
    */
   private sanitizeString(str: string): string {
     return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;')
-      .replace(/\//g, '&#x2F;');
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#x27;')
+      .replaceAll('/', '&#x2F;');
   }
 
   catch(exception: unknown, host: ArgumentsHost) {
@@ -35,24 +35,30 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const isHttp = exception instanceof HttpException;
-    const httpException = isHttp ? (exception as HttpException) : null;
+    const httpException = isHttp ? exception : null;
 
-    const status = httpException?.getStatus() ?? HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      httpException?.getStatus() ?? HttpStatus.INTERNAL_SERVER_ERROR;
     const exceptionResponse = httpException?.getResponse() ?? null;
 
-    const resObj = (typeof exceptionResponse === 'object' && exceptionResponse !== null)
-      ? (exceptionResponse as Record<string, unknown>)
-      : {};
+    const resObj =
+      typeof exceptionResponse === 'object' && exceptionResponse !== null
+        ? (exceptionResponse as Record<string, unknown>)
+        : {};
 
-    const rawMessage = (typeof exceptionResponse === 'string')
-      ? exceptionResponse
-      : (resObj.message as string | string[]) ?? 'Une erreur interne est survenue';
+    const rawMessage =
+      typeof exceptionResponse === 'string'
+        ? exceptionResponse
+        : ((resObj.message as string | string[]) ??
+          'Une erreur interne est survenue');
 
     const message = Array.isArray(rawMessage)
       ? rawMessage.map((m) => this.sanitizeString(String(m)))
       : this.sanitizeString(String(rawMessage));
 
-    const error = this.sanitizeString((resObj.error as string) ?? 'Internal Server Error');
+    const error = this.sanitizeString(
+      (resObj.error as string) ?? 'Internal Server Error',
+    );
     const sanitizedPath = this.sanitizeString(request.url);
 
     response.status(status).json({

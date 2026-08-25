@@ -7,7 +7,9 @@ import { UserRole } from '../../../shared/enums/user-role-enum';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
-  let redisService: jest.Mocked<RedisService>;
+  let redisService: {
+    isAccessTokenBlacklisted: jest.Mock;
+  };
 
   beforeEach(async () => {
     const mockConfigService = {
@@ -54,7 +56,9 @@ describe('JwtStrategy', () => {
       const result = await strategy.validate(req, validPayload);
 
       expect(result).toEqual(validPayload);
-      expect(redisService.isAccessTokenBlacklisted).toHaveBeenCalledWith('valid.jwt.token');
+      expect(redisService.isAccessTokenBlacklisted).toHaveBeenCalledWith(
+        'valid.jwt.token',
+      );
     });
 
     it('doit lever UnauthorizedException si le token est dans la blacklist Redis', async () => {
@@ -66,7 +70,9 @@ describe('JwtStrategy', () => {
         },
       };
 
-      await expect(strategy.validate(req, validPayload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(req, validPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('doit lever UnauthorizedException si le payload ne respecte pas le schéma Zod', async () => {
@@ -75,7 +81,9 @@ describe('JwtStrategy', () => {
       const req = { headers: {} };
       const invalidPayload = { email: 'invalid-payload-without-sub' };
 
-      await expect(strategy.validate(req, invalidPayload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(req, invalidPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

@@ -13,14 +13,23 @@ jest.mock('bcrypt', () => ({
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repository: jest.Mocked<UsersRepository>;
+  let repository: {
+    findAll: jest.Mock;
+    count: jest.Mock;
+    findById: jest.Mock;
+    findByEmail: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    softDelete: jest.Mock;
+    getStatistics: jest.Mock;
+  };
 
   const mockPrismaUser: User = {
     id: 'usr-123',
-    email: 'jean.dupont@test.com',
+    email: 'kodjo.koffie@test.com',
     password: '$2b$12$hashedPasswordKeyHere',
-    firstName: 'Jean',
-    lastName: 'Dupont',
+    firstName: 'Kodjo',
+    lastName: 'Koffie',
     phone: null,
     avatarUrl: null,
     role: UserRole.ADMINISTRATOR,
@@ -43,6 +52,7 @@ describe('UsersService', () => {
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
+      getStatistics: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -71,9 +81,9 @@ describe('UsersService', () => {
         data: [
           {
             id: 'usr-123',
-            email: 'jean.dupont@test.com',
-            firstName: 'Jean',
-            lastName: 'Dupont',
+            email: 'kodjo.koffie@test.com',
+            firstName: 'Kodjo',
+            lastName: 'Koffie',
             role: UserRole.ADMINISTRATOR,
             isActive: true,
             createdAt: mockPrismaUser.createdAt,
@@ -91,34 +101,36 @@ describe('UsersService', () => {
   });
 
   describe('findById', () => {
-    it('doit retourner le DTO d\'un utilisateur existant', async () => {
+    it("doit retourner le DTO d'un utilisateur existant", async () => {
       repository.findById.mockResolvedValue(mockPrismaUser);
 
       const result = await service.findById('usr-123');
 
       expect(result.id).toBe('usr-123');
-      expect(result.email).toBe('jean.dupont@test.com');
+      expect(result.email).toBe('kodjo.koffie@test.com');
       expect(repository.findById).toHaveBeenCalledWith('usr-123');
     });
 
-    it('doit lever NotFoundException si l\'utilisateur n\'existe pas', async () => {
+    it("doit lever NotFoundException si l'utilisateur n'existe pas", async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findById('unknown')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('unknown')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('create', () => {
-    it('doit hacher le mot de passe et créer l\'utilisateur', async () => {
+    it("doit hacher le mot de passe et créer l'utilisateur", async () => {
       repository.findByEmail.mockResolvedValue(null);
       repository.create.mockResolvedValue(mockPrismaUser);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPasswordKeyHere');
 
       const dto = {
-        email: 'jean.dupont@test.com',
+        email: 'kodjo.koffie@test.com',
         password: 'Password123!',
-        firstName: 'Jean',
-        lastName: 'Dupont',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
         role: UserRole.ADMINISTRATOR,
       };
 
@@ -132,14 +144,14 @@ describe('UsersService', () => {
       expect(result.id).toBe('usr-123');
     });
 
-    it('doit lever ConflictException si l\'email existe déjà', async () => {
+    it("doit lever ConflictException si l'email existe déjà", async () => {
       repository.findByEmail.mockResolvedValue(mockPrismaUser);
 
       const dto = {
-        email: 'jean.dupont@test.com',
+        email: 'kodjo.koffie@test.com',
         password: 'Password123!',
-        firstName: 'Jean',
-        lastName: 'Dupont',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
       };
 
       await expect(service.create(dto)).rejects.toThrow(ConflictException);
@@ -149,7 +161,10 @@ describe('UsersService', () => {
   describe('update', () => {
     it('doit mettre à jour les données et hacher le nouveau mot de passe si fourni', async () => {
       repository.findById.mockResolvedValue(mockPrismaUser);
-      repository.update.mockResolvedValue({ ...mockPrismaUser, firstName: 'Pierre' });
+      repository.update.mockResolvedValue({
+        ...mockPrismaUser,
+        firstName: 'Pierre',
+      });
       (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
 
       const dto = { firstName: 'Pierre', password: 'NewPassword123!' };
@@ -162,27 +177,136 @@ describe('UsersService', () => {
       expect(result.firstName).toBe('Pierre');
     });
 
-    it('doit lever NotFoundException si l\'utilisateur à modifier n\'existe pas', async () => {
+    it("doit lever NotFoundException si l'utilisateur à modifier n'existe pas", async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.update('unknown', { firstName: 'Test' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update('unknown', { firstName: 'Test' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('softDelete', () => {
-    it('doit appeler softDelete du repository si l\'utilisateur existe', async () => {
+    it("doit appeler softDelete du repository si l'utilisateur existe", async () => {
       repository.findById.mockResolvedValue(mockPrismaUser);
-      repository.softDelete.mockResolvedValue();
+      repository.softDelete.mockResolvedValue(undefined);
 
       await service.softDelete('usr-123');
 
       expect(repository.softDelete).toHaveBeenCalledWith('usr-123');
     });
 
-    it('doit lever NotFoundException si l\'utilisateur n\'existe pas', async () => {
+    it("doit lever NotFoundException si l'utilisateur n'existe pas", async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.softDelete('unknown')).rejects.toThrow(NotFoundException);
+      await expect(service.softDelete('unknown')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getStatistics', () => {
+    it('doit appeler getStatistics du repository et retourner les métriques', async () => {
+      const byRole = Object.values(UserRole).reduce<Record<UserRole, number>>(
+        (acc, role, index) => {
+          acc[role] = index + 1;
+          return acc;
+        },
+        {} as Record<UserRole, number>,
+      );
+
+      const mockStats = {
+        totalUsers: 20,
+        activeUsers: 18,
+        inactiveUsers: 2,
+        byRole,
+        recentRegistrationsLast30Days: 4,
+      };
+
+      repository.getStatistics.mockResolvedValue(mockStats);
+
+      const result = await service.getStatistics({
+        startDate: '2026-01-01',
+        endDate: '2026-06-30',
+      });
+
+      expect(result).toEqual(mockStats);
+      expect(repository.getStatistics).toHaveBeenCalledWith(
+        expect.any(Date),
+        expect.any(Date),
+      );
+    });
+  });
+
+  describe('uploadAvatar', () => {
+    it('doit lever BadRequestException si aucun fichier n’est transmis', async () => {
+      await expect(service.uploadAvatar('usr-123', undefined)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('doit lever NotFoundException si l’utilisateur n’existe pas', async () => {
+      repository.findById.mockResolvedValue(null);
+      const mockFile = {
+        filename: 'avatar-123.jpg',
+        path: '/tmp/avatar-123.jpg',
+      } as Express.Multer.File;
+
+      await expect(service.uploadAvatar('unknown', mockFile)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('doit mettre à jour l’avatarUrl et retourner l’utilisateur', async () => {
+      repository.findById.mockResolvedValue(mockPrismaUser);
+      const updatedPrismaUser = {
+        ...mockPrismaUser,
+        avatarUrl: '/uploads/users/usr-123/profile/avatar-123.jpg',
+      };
+      repository.update.mockResolvedValue(updatedPrismaUser);
+
+      const mockFile = {
+        filename: 'avatar-123.jpg',
+        path: '/uploads/users/usr-123/profile/avatar-123.jpg',
+      } as Express.Multer.File;
+
+      const result = await service.uploadAvatar('usr-123', mockFile);
+
+      expect(result.avatarUrl).toBe(
+        '/uploads/users/usr-123/profile/avatar-123.jpg',
+      );
+      expect(repository.update).toHaveBeenCalledWith('usr-123', {
+        avatarUrl: '/uploads/users/usr-123/profile/avatar-123.jpg',
+      });
+    });
+  });
+
+  describe('removeAvatar', () => {
+    it('doit lever NotFoundException si l’utilisateur n’existe pas', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.removeAvatar('unknown')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('doit supprimer l’avatar et remettre avatarUrl à null', async () => {
+      const userWithAvatar = {
+        ...mockPrismaUser,
+        avatarUrl: '/uploads/users/usr-123/profile/avatar-old.jpg',
+      };
+      repository.findById.mockResolvedValue(userWithAvatar);
+      repository.update.mockResolvedValue({
+        ...userWithAvatar,
+        avatarUrl: null,
+      });
+
+      const result = await service.removeAvatar('usr-123');
+
+      expect(result.avatarUrl).toBeNull();
+      expect(repository.update).toHaveBeenCalledWith('usr-123', {
+        avatarUrl: null,
+      });
     });
   });
 });

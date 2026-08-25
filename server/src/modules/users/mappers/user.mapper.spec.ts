@@ -6,10 +6,10 @@ describe('UserMapper', () => {
   it('doit correctement transformer un User Prisma en UserResponseDto sans le mot de passe', () => {
     const prismaUser: User = {
       id: 'usr-123',
-      email: 'jean.dupont@test.com',
+      email: 'kodjo.koffie@test.com',
       password: 'hashedpassword123',
-      firstName: 'Jean',
-      lastName: 'Dupont',
+      firstName: 'Kodjo',
+      lastName: 'Koffie',
       phone: null,
       avatarUrl: null,
       role: UserRole.ADMINISTRATOR,
@@ -25,9 +25,9 @@ describe('UserMapper', () => {
 
     expect(dto).toEqual({
       id: 'usr-123',
-      email: 'jean.dupont@test.com',
-      firstName: 'Jean',
-      lastName: 'Dupont',
+      email: 'kodjo.koffie@test.com',
+      firstName: 'Kodjo',
+      lastName: 'Koffie',
       role: UserRole.ADMINISTRATOR,
       isActive: true,
       createdAt: prismaUser.createdAt,

@@ -8,10 +8,10 @@ import { UserRole } from '../../../shared/enums/user-role-enum';
  * @public
  */
 export type JwtPayload = {
-  sub: string;       // userId
+  sub: string; // userId
   email: string;
   role: UserRole;
-  sid?: string;      // session id / token id (optionnel)
+  sid?: string; // session id / token id (optionnel)
   iat?: number;
   exp?: number;
 };

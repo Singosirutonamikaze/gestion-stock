@@ -21,12 +21,15 @@ describe('AppConfigService', () => {
       DB_PORT: 5433,
       DB_NAME: 'gestion_stock_test',
       DB_SCHEMA: 'public',
-      DATABASE_URL: 'postgresql://admin:secret@db-host:5433/gestion_stock_test?schema=public',
+      DATABASE_URL:
+        'postgresql://admin:secret@db-host:5433/gestion_stock_test?schema=public',
       JWT_SECRET: 'super-jwt-secret',
       JWT_EXPIRES_IN: '2d',
     });
 
-    service = new AppConfigService(mockConfigService as unknown as NestConfigService);
+    service = new AppConfigService(
+      mockConfigService as unknown as NestConfigService,
+    );
   });
 
   it('doit etre instancie', () => {
@@ -87,7 +90,9 @@ describe('AppConfigService', () => {
         get: jest.fn((_key: string, defaultValue?: unknown) => defaultValue),
       };
 
-      serviceDefaut = new AppConfigService(mockDefaut as unknown as NestConfigService);
+      serviceDefaut = new AppConfigService(
+        mockDefaut as unknown as NestConfigService,
+      );
     });
 
     it('doit retourner "development" par defaut pour nodeEnv', () => {

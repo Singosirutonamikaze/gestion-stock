@@ -1,6 +1,5 @@
 import { User } from '@prisma/client';
 import { UserResponseDto } from '../dto/user-response.dto';
-import { UserRole } from '../../../shared/enums/user-role-enum';
 
 /**
  * Mapper responsable de la transformation sécurisée de l'entité Prisma User vers le DTO UserResponseDto.
@@ -14,16 +13,17 @@ export class UserMapper {
   /**
    * Convertit une entité Prisma User en UserResponseDto.
    *
+   * @this void
    * @param {User} user - L'entité utilisateur issue de la base de données
    * @returns {UserResponseDto} Le DTO d'exposition sécurisé
    */
-  static toResponseDto(user: User): UserResponseDto {
+  static toResponseDto(this: void, user: User): UserResponseDto {
     return {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role as UserRole,
+      role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

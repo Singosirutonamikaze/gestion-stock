@@ -13,7 +13,11 @@ import { IBaseRepository } from '../../../shared/interfaces/base-repository.inte
  * @since 0.0.1
  * @public
  */
-export interface IUsersRepository extends IBaseRepository<User, CreateUserDto & { password: string }, Partial<User>> {
+export interface IUsersRepository extends IBaseRepository<
+  User,
+  CreateUserDto & { password: string },
+  Partial<User>
+> {
   /**
    * Extrait la liste paginée et filtrée des utilisateurs enregistrés dans la base de données.
    *
@@ -77,4 +81,17 @@ export interface IUsersRepository extends IBaseRepository<User, CreateUserDto & 
    * @async
    */
   softDelete(id: string): Promise<void>;
+
+  /**
+   * Calcule les métriques et agrégations sur les utilisateurs (total, actifs, groupBy rôle, créations récentes).
+   *
+   * @param {Date} [startDate] - Date de début optionnelle
+   * @param {Date} [endDate] - Date de fin optionnelle
+   * @returns {Promise<import('../dto/user-statistics.dto').UserStatisticsDto>} Métriques consolidées
+   * @async
+   */
+  getStatistics(
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<import('../dto/user-statistics.dto').UserStatisticsDto>;
 }

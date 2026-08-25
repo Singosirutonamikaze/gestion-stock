@@ -17,16 +17,31 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaService: jest.Mocked<PrismaService>;
-  let redisService: jest.Mocked<RedisService>;
-  let jwtService: jest.Mocked<JwtService>;
+  let prismaService: {
+    user: {
+      findUnique: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let redisService: {
+    setRefreshToken: jest.Mock;
+    isRefreshTokenValid: jest.Mock;
+    revokeRefreshToken: jest.Mock;
+    blacklistAccessToken: jest.Mock;
+    revokeAllUserSessions: jest.Mock;
+  };
+  let jwtService: {
+    sign: jest.Mock;
+    verify: jest.Mock;
+  };
 
   const mockUser: User = {
     id: 'usr-123',
     email: 'test@example.com',
     password: '$2b$12$hashedPassword',
-    firstName: 'Jean',
-    lastName: 'Dupont',
+    firstName: 'Kodjo',
+    lastName: 'Koffie',
     phone: null,
     avatarUrl: null,
     role: UserRole.ADMINISTRATOR,
@@ -90,56 +105,59 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('doit retourner une paire de tokens lors d\'une connexion réussie', async () => {
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (prismaService.user.update as jest.Mock).mockResolvedValue(mockUser);
+    it("doit retourner une paire de tokens lors d'une connexion réussie", async () => {
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+      prismaService.user.update.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       jwtService.sign
         .mockReturnValueOnce('access_token_str')
         .mockReturnValueOnce('refresh_token_str');
 
-      const meta = { ipAddress: '127.0.0.1', userAgent: 'Jest' };
       const dto = { email: 'test@example.com', password: 'Password123!' };
 
-      const result = await service.login(dto, meta);
+      const result = await service.login(dto);
 
       expect(result).toEqual({
         accessToken: 'access_token_str',
         refreshToken: 'refresh_token_str',
         expiresIn: 900,
       });
-      expect(prismaService.user.update).toHaveBeenCalledWith({
-        where: { id: mockUser.id },
-        data: { lastLoginAt: expect.any(Date) },
-      });
-      expect(redisService.setRefreshToken).toHaveBeenCalledWith(mockUser.id, 'refresh_token_str', 604800);
+      expect(prismaService.user.update).toHaveBeenCalledTimes(1);
+      const [updateCallArg] = prismaService.user.update.mock.calls[0] as [
+        { where: { id: string }; data: { lastLoginAt: Date } },
+      ];
+      expect(updateCallArg.where).toEqual({ id: mockUser.id });
+      expect(updateCallArg.data.lastLoginAt).toBeInstanceOf(Date);
+      expect(redisService.setRefreshToken).toHaveBeenCalledWith(
+        mockUser.id,
+        'refresh_token_str',
+        604800,
+      );
     });
 
-    it('doit lever UnauthorizedException si l\'utilisateur n\'existe pas ou est inactif', async () => {
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+    it("doit lever UnauthorizedException si l'utilisateur n'existe pas ou est inactif", async () => {
+      prismaService.user.findUnique.mockResolvedValue(null);
 
-      const meta = { ipAddress: '127.0.0.1', userAgent: 'Jest' };
       const dto = { email: 'unknown@example.com', password: 'Password123!' };
 
-      await expect(service.login(dto, meta)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
     });
 
     it('doit lever UnauthorizedException si le mot de passe est incorrect', async () => {
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      const meta = { ipAddress: '127.0.0.1', userAgent: 'Jest' };
       const dto = { email: 'test@example.com', password: 'WrongPassword' };
 
-      await expect(service.login(dto, meta)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('register', () => {
     it('doit hacher le mot de passe, créer le compte et retourner les tokens', async () => {
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prismaService.user.create as jest.Mock).mockResolvedValue(mockUser);
+      prismaService.user.findUnique.mockResolvedValue(null);
+      prismaService.user.create.mockResolvedValue(mockUser);
       (bcrypt.hash as jest.Mock).mockResolvedValue('$2b$12$hashedPassword');
 
       jwtService.sign
@@ -149,8 +167,8 @@ describe('AuthService', () => {
       const dto = {
         email: 'test@example.com',
         password: 'Password123!',
-        firstName: 'Jean',
-        lastName: 'Dupont',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
       };
 
       const result = await service.register(dto);
@@ -161,17 +179,21 @@ describe('AuthService', () => {
         expiresIn: 900,
       });
       expect(prismaService.user.create).toHaveBeenCalled();
-      expect(redisService.setRefreshToken).toHaveBeenCalledWith(mockUser.id, 'refresh_token_str', 604800);
+      expect(redisService.setRefreshToken).toHaveBeenCalledWith(
+        mockUser.id,
+        'refresh_token_str',
+        604800,
+      );
     });
 
-    it('doit lever ConflictException si l\'email est déjà utilisé', async () => {
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+    it("doit lever ConflictException si l'email est déjà utilisé", async () => {
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
 
       const dto = {
         email: 'test@example.com',
         password: 'Password123!',
-        firstName: 'Jean',
-        lastName: 'Dupont',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
       };
 
       await expect(service.register(dto)).rejects.toThrow(ConflictException);
@@ -180,10 +202,14 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('doit rafraîchir la paire de tokens si le refresh token est valide dans Redis', async () => {
-      const payload: JwtPayload = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
+      const payload: JwtPayload = {
+        sub: 'usr-123',
+        email: 'test@example.com',
+        role: UserRole.ADMINISTRATOR,
+      };
       jwtService.verify.mockReturnValue(payload);
       redisService.isRefreshTokenValid.mockResolvedValue(true);
-      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
 
       jwtService.sign
         .mockReturnValueOnce('new_access_token')
@@ -196,8 +222,15 @@ describe('AuthService', () => {
         refreshToken: 'new_refresh_token',
         expiresIn: 900,
       });
-      expect(redisService.revokeRefreshToken).toHaveBeenCalledWith('usr-123', 'old_refresh_token');
-      expect(redisService.setRefreshToken).toHaveBeenCalledWith('usr-123', 'new_refresh_token', 604800);
+      expect(redisService.revokeRefreshToken).toHaveBeenCalledWith(
+        'usr-123',
+        'old_refresh_token',
+      );
+      expect(redisService.setRefreshToken).toHaveBeenCalledWith(
+        'usr-123',
+        'new_refresh_token',
+        604800,
+      );
     });
 
     it('doit lever UnauthorizedException si le token est expiré ou révoqué', async () => {
@@ -205,24 +238,34 @@ describe('AuthService', () => {
         throw new Error('Expired');
       });
 
-      await expect(service.refresh('invalid_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('invalid_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('logout', () => {
-    it('doit révoquer le refresh token et blacklister l\'access token s\'ils sont fournis', async () => {
+    it("doit révoquer le refresh token et blacklister l'access token s'ils sont fournis", async () => {
       await service.logout('usr-123', 'refresh_token', 'access_token');
 
-      expect(redisService.revokeRefreshToken).toHaveBeenCalledWith('usr-123', 'refresh_token');
-      expect(redisService.blacklistAccessToken).toHaveBeenCalledWith('access_token', 900);
+      expect(redisService.revokeRefreshToken).toHaveBeenCalledWith(
+        'usr-123',
+        'refresh_token',
+      );
+      expect(redisService.blacklistAccessToken).toHaveBeenCalledWith(
+        'access_token',
+        900,
+      );
     });
   });
 
   describe('logoutAll', () => {
-    it('doit révoquer toutes les sessions Redis de l\'utilisateur', async () => {
+    it("doit révoquer toutes les sessions Redis de l'utilisateur", async () => {
       await service.logoutAll('usr-123');
 
-      expect(redisService.revokeAllUserSessions).toHaveBeenCalledWith('usr-123');
+      expect(redisService.revokeAllUserSessions).toHaveBeenCalledWith(
+        'usr-123',
+      );
     });
   });
 });

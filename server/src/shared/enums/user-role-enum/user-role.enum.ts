@@ -17,9 +17,9 @@ export const OPERATION = Object.freeze({
 
   // Opérations étendues
   LIST: 'list',
-  PATCH: 'patch',       // mise à jour partielle
-  RESTORE: 'restore',   // restaurer un élément supprimé
-  ARCHIVE: 'archive',   // archiver sans supprimer
+  PATCH: 'patch', // mise à jour partielle
+  RESTORE: 'restore', // restaurer un élément supprimé
+  ARCHIVE: 'archive', // archiver sans supprimer
   RENAME: 'rename',
   MOVE: 'move',
   COPY: 'copy',
@@ -38,10 +38,10 @@ export type OperationType = (typeof OPERATION)[keyof typeof OPERATION];
  * @enum {string}
  */
 export const STATUS = Object.freeze({
-  PENDING: 'pending',         // opération en attente
+  PENDING: 'pending', // opération en attente
   IN_PROGRESS: 'in_progress', // en cours d'exécution
-  COMMITTED: 'committed',     // terminée avec succès
-  FAILED: 'failed',           // échec
+  COMMITTED: 'committed', // terminée avec succès
+  FAILED: 'failed', // échec
   ROLLED_BACK: 'rolled_back', // annulée / restaurée à l'état précédent
 } as const);
 

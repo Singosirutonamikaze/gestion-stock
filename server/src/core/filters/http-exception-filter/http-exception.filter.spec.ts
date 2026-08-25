@@ -30,7 +30,10 @@ describe('GlobalHttpExceptionFilter', () => {
   });
 
   it('doit renvoyer 404 pour une HttpException NotFoundException', () => {
-    const exception = new HttpException('Ressource introuvable', HttpStatus.NOT_FOUND);
+    const exception = new HttpException(
+      'Ressource introuvable',
+      HttpStatus.NOT_FOUND,
+    );
 
     filter.catch(exception, mockHost);
 
@@ -38,7 +41,10 @@ describe('GlobalHttpExceptionFilter', () => {
   });
 
   it('doit renvoyer 400 pour une HttpException BadRequestException', () => {
-    const exception = new HttpException('Requete invalide', HttpStatus.BAD_REQUEST);
+    const exception = new HttpException(
+      'Requete invalide',
+      HttpStatus.BAD_REQUEST,
+    );
 
     filter.catch(exception, mockHost);
 
@@ -50,15 +56,20 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   });
 
   it('doit inclure statusCode dans le corps de la reponse', () => {
-    const exception = new HttpException('Non autorise', HttpStatus.UNAUTHORIZED);
+    const exception = new HttpException(
+      'Non autorise',
+      HttpStatus.UNAUTHORIZED,
+    );
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.statusCode).toBe(HttpStatus.UNAUTHORIZED);
   });
 
@@ -67,7 +78,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(typeof body.timestamp).toBe('string');
   });
 
@@ -76,16 +87,19 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.path).toBe('&#x2F;api&#x2F;test');
   });
 
   it('doit inclure le message dans le corps de la reponse pour une exception string', () => {
-    const exception = new HttpException('Message simple', HttpStatus.BAD_REQUEST);
+    const exception = new HttpException(
+      'Message simple',
+      HttpStatus.BAD_REQUEST,
+    );
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.message).toBe('Message simple');
   });
 
@@ -97,7 +111,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.message).toBe('Champ requis manquant');
   });
 
@@ -106,7 +120,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
     expect(body.error).toBe('Internal Server Error');
   });
 

@@ -1,21 +1,23 @@
-import { ExecutionContext, CallHandler } from '@nestjs/common';
+import { ExecutionContext } from '@nestjs/common';
 import { LoggingInterceptor } from './logging.interceptor';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 describe('LoggingInterceptor', () => {
   let interceptor: LoggingInterceptor;
-  let mockContext: ExecutionContext;
-  let mockNext: CallHandler;
+  let mockContext: { switchToHttp: jest.Mock };
+  let mockNext: { handle: jest.Mock };
 
   beforeEach(() => {
     interceptor = new LoggingInterceptor();
 
     mockContext = {
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: jest.fn().mockReturnValue({ method: 'GET', url: '/health' }),
+        getRequest: jest
+          .fn()
+          .mockReturnValue({ method: 'GET', url: '/health' }),
         getResponse: jest.fn().mockReturnValue({ statusCode: 200 }),
       }),
-    } as unknown as ExecutionContext;
+    };
 
     mockNext = {
       handle: jest.fn().mockReturnValue(of({ status: 'ok' })),
@@ -27,7 +29,10 @@ describe('LoggingInterceptor', () => {
   });
 
   it('doit retourner un Observable', (done) => {
-    const result = interceptor.intercept(mockContext, mockNext);
+    const result = interceptor.intercept(
+      mockContext as unknown as ExecutionContext,
+      mockNext,
+    );
 
     result.subscribe({
       next: (value) => {
@@ -38,7 +43,10 @@ describe('LoggingInterceptor', () => {
   });
 
   it('doit appeler handle() sur le CallHandler', (done) => {
-    const result = interceptor.intercept(mockContext, mockNext);
+    const result = interceptor.intercept(
+      mockContext as unknown as ExecutionContext,
+      mockNext,
+    );
 
     result.subscribe({
       complete: () => {
@@ -52,7 +60,10 @@ describe('LoggingInterceptor', () => {
     const payload = { data: 'valeur test' };
     mockNext.handle = jest.fn().mockReturnValue(of(payload));
 
-    const result = interceptor.intercept(mockContext, mockNext);
+    const result = interceptor.intercept(
+      mockContext as unknown as ExecutionContext,
+      mockNext,
+    );
 
     result.subscribe({
       next: (value) => {
@@ -63,11 +74,31 @@ describe('LoggingInterceptor', () => {
   });
 
   it('doit appeler switchToHttp pour acceder au contexte HTTP', (done) => {
-    const result = interceptor.intercept(mockContext, mockNext);
+    const result = interceptor.intercept(
+      mockContext as unknown as ExecutionContext,
+      mockNext,
+    );
 
     result.subscribe({
       complete: () => {
         expect(mockContext.switchToHttp).toHaveBeenCalledTimes(1);
+        done();
+      },
+    });
+  });
+
+  it("doit consigner l'erreur si la requête échoue", (done) => {
+    const error = new Error('Test error');
+    mockNext.handle = jest.fn().mockReturnValue(throwError(() => error));
+
+    const result = interceptor.intercept(
+      mockContext as unknown as ExecutionContext,
+      mockNext,
+    );
+
+    result.subscribe({
+      error: (err) => {
+        expect(err).toEqual(error);
         done();
       },
     });

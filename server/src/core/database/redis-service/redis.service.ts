@@ -17,7 +17,7 @@ import { AppConfigService } from '../../config/config-service';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
-  private client: Redis;
+  private client!: Redis;
 
   constructor(private readonly configService: AppConfigService) {}
 
@@ -92,9 +92,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async revokeAllUserSessions(userId: string): Promise<void> {
     const pattern = `refresh_token:${userId}:*`;
     const keys = await this.client.keys(pattern);
-    const hasKeys = Boolean(keys?.length);
 
-    if (hasKeys) {
+    if (keys.length > 0) {
       await this.client.del(...keys);
     }
   }

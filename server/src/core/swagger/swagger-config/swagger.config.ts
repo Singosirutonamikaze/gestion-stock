@@ -19,8 +19,14 @@ export function setupSwagger(
   const version: string = configService?.swaggerVersion ?? '0.0.1';
 
   app.use(cookieParser());
+  app.use(express.urlencoded({ extended: true }));
 
   const httpAdapter = app.getHttpAdapter();
+
+  // Gestion du favicon pour éviter les erreurs 404 dans le navigateur
+  httpAdapter.get('/favicon.ico', (_req: Request, res: Response) => {
+    res.status(204).end();
+  });
 
   // Servir les images statiques et le CSS du dossier public principal et du sous-module swagger
   const publicPath = path.join(process.cwd(), 'public');
@@ -76,8 +82,10 @@ export function setupSwagger(
 
     // Route POST pour traiter la connexion
     httpAdapter.post('/swagger-login', (req: Request, res: Response) => {
-      const { username, password } =
-        (req.body as { username?: string; password?: string }) || {};
+      const body = req.body as
+        { username?: string; password?: string } | undefined;
+      const username = body?.username?.trim();
+      const password = body?.password?.trim();
 
       if (username === swaggerUser && password === swaggerPassword) {
         const expectedToken = Buffer.from(

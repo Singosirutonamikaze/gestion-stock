@@ -11,9 +11,9 @@ import { UserRole } from '../../../shared/enums/user-role-enum';
  * @public
  */
 export const jwtPayloadSchema = z.object({
-  sub: z.string().uuid(),
-  email: z.string().email(),
-  role: z.nativeEnum(UserRole),
+  sub: z.uuid(),
+  email: z.email(),
+  role: z.enum(UserRole),
   sid: z.string().optional(),
   iat: z.number().optional(),
   exp: z.number().optional(),

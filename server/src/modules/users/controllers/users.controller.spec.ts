@@ -7,13 +7,22 @@ import { Paginated } from '../../../shared/types/paginated.type';
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let service: jest.Mocked<UsersService>;
+  let service: {
+    findAll: jest.Mock;
+    findById: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    softDelete: jest.Mock;
+    getStatistics: jest.Mock;
+    uploadAvatar: jest.Mock;
+    removeAvatar: jest.Mock;
+  };
 
   const mockUserResponse: UserResponseDto = {
     id: 'usr-123',
-    email: 'jean.dupont@test.com',
-    firstName: 'Jean',
-    lastName: 'Dupont',
+    email: 'kodjo.koffie@test.com',
+    firstName: 'Kodjo',
+    lastName: 'Koffie',
     role: UserRole.ADMINISTRATOR,
     isActive: true,
     createdAt: new Date(),
@@ -27,6 +36,9 @@ describe('UsersController', () => {
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
+      getStatistics: jest.fn(),
+      uploadAvatar: jest.fn(),
+      removeAvatar: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -63,7 +75,7 @@ describe('UsersController', () => {
   });
 
   describe('findById', () => {
-    it('doit retourner les détails d\'un utilisateur', async () => {
+    it("doit retourner les détails d'un utilisateur", async () => {
       service.findById.mockResolvedValue(mockUserResponse);
 
       const result = await controller.findById('usr-123');
@@ -76,10 +88,10 @@ describe('UsersController', () => {
   describe('create', () => {
     it('doit créer un utilisateur et retourner la réponse', async () => {
       const createDto = {
-        email: 'jean.dupont@test.com',
+        email: 'kodjo.koffie@test.com',
         password: 'Password123!',
-        firstName: 'Jean',
-        lastName: 'Dupont',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
         role: UserRole.ADMINISTRATOR,
       };
 
@@ -108,11 +120,69 @@ describe('UsersController', () => {
 
   describe('softDelete', () => {
     it('doit appeler softDelete du service', async () => {
-      service.softDelete.mockResolvedValue();
+      service.softDelete.mockResolvedValue(undefined);
 
       await controller.softDelete('usr-123');
 
       expect(service.softDelete).toHaveBeenCalledWith('usr-123');
+    });
+  });
+
+  describe('getStatistics', () => {
+    it('doit retourner les statistiques consolidées', async () => {
+      const byRole = Object.values(UserRole).reduce<Record<UserRole, number>>(
+        (acc, role, index) => {
+          acc[role] = index + 1;
+          return acc;
+        },
+        {} as Record<UserRole, number>,
+      );
+
+      const mockStats = {
+        totalUsers: 10,
+        activeUsers: 9,
+        inactiveUsers: 1,
+        byRole,
+        recentRegistrationsLast30Days: 2,
+      };
+
+      service.getStatistics.mockResolvedValue(mockStats);
+
+      const query = { startDate: '2026-01-01', endDate: '2026-06-30' };
+      const result = await controller.getStatistics(query);
+
+      expect(result).toEqual(mockStats);
+      expect(service.getStatistics).toHaveBeenCalledWith(query);
+    });
+  });
+
+  describe('uploadAvatar', () => {
+    it('doit appeler uploadAvatar du service et retourner la réponse', async () => {
+      const mockFile = {
+        filename: 'avatar-123.jpg',
+      } as Express.Multer.File;
+      const updatedUser = {
+        ...mockUserResponse,
+        avatarUrl: '/uploads/users/usr-123/profile/avatar-123.jpg',
+      };
+      service.uploadAvatar.mockResolvedValue(updatedUser);
+
+      const result = await controller.uploadAvatar('usr-123', mockFile);
+
+      expect(result).toEqual(updatedUser);
+      expect(service.uploadAvatar).toHaveBeenCalledWith('usr-123', mockFile);
+    });
+  });
+
+  describe('removeAvatar', () => {
+    it('doit appeler removeAvatar du service et retourner la réponse', async () => {
+      const updatedUser = { ...mockUserResponse, avatarUrl: null };
+      service.removeAvatar.mockResolvedValue(updatedUser);
+
+      const result = await controller.removeAvatar('usr-123');
+
+      expect(result).toEqual(updatedUser);
+      expect(service.removeAvatar).toHaveBeenCalledWith('usr-123');
     });
   });
 });

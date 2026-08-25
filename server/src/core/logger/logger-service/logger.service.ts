@@ -3,8 +3,9 @@ import * as winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 /**
- * Service de journalisation centralisé utilisant Winston.
- * Fournit des logs formatés en console et rotation horaire en fichiers JSON.
+ * Service de journalisation centralisé haute performance basé sur Winston.
+ * Fournit une sortie console lisible et colorée en développement,
+ * et une rotation de fichiers journaliers structurés JSON en production.
  *
  * @author SINGO Yao Dieu Donnée
  * @since 0.0.1
@@ -15,84 +16,67 @@ export class LoggerService implements NestLoggerService {
   private readonly logger: winston.Logger;
 
   /**
-   * Normalise une valeur brute (contexte ou trace) en chaîne de caractères sûre.
-   * Les chaînes sont retournées telles quelles. Les objets sont sérialisés en JSON
-   * plutôt que stringifiés nativement, pour éviter le rendu générique "[object Object]".
+   * Convertit de manière sécurisée une valeur inconnue en chaîne de caractères
+   * sans provoquer d'erreur ESLint `no-base-to-string` ou SonarQube `S6551`.
    *
-   * @param value - Valeur brute à normaliser (peut être `null`, `undefined`, string, objet, etc.)
-   * @returns Chaîne vide si `null`/`undefined`, sinon la représentation string.
+   * @param {unknown} value - Valeur brute à convertir
+   * @returns {string} Chaîne sécurisée
    */
-  private static normalizeValue(value: unknown): string {
-    const handlers: Record<string, (v: unknown) => string> = {
-      string: (v) => v as string,
-      object: (v) => (v == null ? '' : JSON.stringify(v)),
-    };
-    return (handlers[typeof value] ?? String)(value);
-  }
-
-  /**
-   * Normalise une valeur de contexte en chaîne de caractères sûre.
-   *
-   * @param context - Valeur brute du contexte (peut être `null`, `undefined`, objet, etc.)
-   * @returns Chaîne vide si `null`/`undefined`, sinon la représentation string.
-   */
-  private static normalizeContext(context: unknown): string {
-    return LoggerService.normalizeValue(context);
-  }
-
-  /**
-   * Normalise une valeur de trace en chaîne de caractères sûre.
-   *
-   * @param trace - Valeur brute de la trace (peut être `null`, `undefined`, objet, etc.)
-   * @returns Chaîne vide si `null`/`undefined`, sinon la représentation string.
-   */
-  private static normalizeTrace(trace: unknown): string {
-    return LoggerService.normalizeValue(trace);
-  }
-
-  /**
-   * Formate un objet de métadonnées pour l'affichage dans les logs.
-   *
-   * @param meta - Métadonnées additionnelles du log.
-   * @returns Chaîne vide si aucune métadonnée, sinon JSON préfixé d'un espace.
-   */
-  private static formatMeta(meta: Record<string, unknown>): string {
-    if (Object.keys(meta).length > 0) {
-      return ` ${JSON.stringify(meta)}`;
+  private static safeString(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return value.toString();
+    }
+    if (value !== null && typeof value === 'object') {
+      return JSON.stringify(value);
     }
     return '';
   }
 
   /**
-   * Formate la chaîne de contexte pour l'affichage dans les logs.
+   * Construit le format d'affichage pour la console (colorisé, horodaté et formaté).
    *
-   * @param ctxStr - Contexte déjà normalisé.
-   * @returns Contexte entouré de crochets, ou chaîne vide si absent.
+   * @returns {winston.Logform.Format} Format Winston pour la console
    */
-  private static formatContext(ctxStr: string): string {
-    if (ctxStr.length > 0) {
-      return `[${ctxStr}]`;
-    }
-    return '';
-  }
-
-  /**
-   * Construit le format d'affichage "pretty" utilisé pour la console.
-   *
-   * @returns Format Winston combinant timestamp, colorisation et mise en page personnalisée.
-   */
-  private static buildPrettyFormat(): winston.Logform.Format {
+  private static buildConsoleFormat(): winston.Logform.Format {
     return winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.colorize(),
-      winston.format.simple(),
+      winston.format.colorize({ all: true }),
+      winston.format.printf((info) => {
+        const timestamp = LoggerService.safeString(info.timestamp);
+        const level = LoggerService.safeString(info.level);
+        const message = LoggerService.safeString(info.message);
+        const contextStr = LoggerService.safeString(info.context);
+        const traceStr = LoggerService.safeString(info.trace);
+
+        const context = contextStr ? ` [${contextStr}]` : '';
+        const trace = traceStr ? `\n${traceStr}` : '';
+
+        const metaKeys = Object.keys(info).filter(
+          (k) =>
+            !['timestamp', 'level', 'message', 'context', 'trace'].includes(k),
+        );
+
+        let metaStr = '';
+        if (metaKeys.length > 0) {
+          const metaObj: Record<string, unknown> = {};
+          for (const key of metaKeys) {
+            metaObj[key] = info[key];
+          }
+          metaStr = ` ${JSON.stringify(metaObj)}`;
+        }
+
+        return `[Nest] ${timestamp} ${level}${context}: ${message}${metaStr}${trace}`;
+      }),
     );
   }
 
   /**
-   * Construit le format JSON structuré utilisé pour l'écriture en fichier.
+   * Construit le format JSON structuré pour les fichiers de logs.
    *
-   * @returns Format Winston combinant timestamp et sérialisation JSON.
+   * @returns {winston.Logform.Format} Format Winston JSON
    */
   private static buildFileFormat(): winston.Logform.Format {
     return winston.format.combine(
@@ -102,111 +86,123 @@ export class LoggerService implements NestLoggerService {
   }
 
   /**
-   * Crée le transport de rotation horaire pour les logs applicatifs généraux.
+   * Crée le transport de rotation pour tous les logs applicatifs.
+   * Arborescence hiérarchique générée : `logs/YYYY-Www/day-DD/app.log`
+   * Exemple : `logs/2026-W35/day-25/app.log`
    *
-   * Arborescence générée : `logs/YYYY-WW/day-DD/app-YYYY-MM-DD-HH.log`
-   * Conservation : 14 jours.
-   *
-   * @param fileFormat - Format de sérialisation appliqué au fichier.
-   * @returns Instance de transport `DailyRotateFile`.
+   * @param {winston.Logform.Format} format - Format appliqué au fichier
+   * @returns {DailyRotateFile} Transport Winston DailyRotateFile
    */
-  private static buildHourlyRotateTransport(
-    fileFormat: winston.Logform.Format,
+  private static buildDailyRotateTransport(
+    format: winston.Logform.Format,
   ): DailyRotateFile {
     return new DailyRotateFile({
-      filename: 'logs/%YYYY%-%GG%/day-%DD%/app-%YYYY%-%MM%-%DD%-%HH%.log',
-      datePattern: 'YYYY-MM-DD-HH',
+      filename: 'logs/%DATE%/app.log',
+      datePattern: 'YYYY-[W]WW/[day-]DD',
+      auditFile: 'logs/.audit/app-audit.json',
       zippedArchive: true,
       maxSize: '20m',
       maxFiles: '14d',
-      format: fileFormat,
+      format,
     });
   }
 
   /**
-   * Crée le transport de rotation horaire dédié aux logs d'erreur.
+   * Crée le transport de rotation dédié aux erreurs.
+   * Arborescence hiérarchique générée : `logs/YYYY-Www/day-DD/error.log`
+   * Exemple : `logs/2026-W35/day-25/error.log`
    *
-   * Arborescence générée : `logs/YYYY-WW/day-DD/error-YYYY-MM-DD-HH.log`
-   * Conservation : 30 jours.
-   *
-   * @param fileFormat - Format de sérialisation appliqué au fichier.
-   * @returns Instance de transport `DailyRotateFile` filtré sur le niveau `error`.
+   * @param {winston.Logform.Format} format - Format appliqué au fichier
+   * @returns {DailyRotateFile} Transport Winston DailyRotateFile pour les erreurs
    */
-  private static buildHourlyErrorRotateTransport(
-    fileFormat: winston.Logform.Format,
+  private static buildErrorRotateTransport(
+    format: winston.Logform.Format,
   ): DailyRotateFile {
     return new DailyRotateFile({
       level: 'error',
-      filename: 'logs/%YYYY%-%GG%/day-%DD%/error-%YYYY%-%MM%-%DD%-%HH%.log',
-      datePattern: 'YYYY-MM-DD-HH',
+      filename: 'logs/%DATE%/error.log',
+      datePattern: 'YYYY-[W]WW/[day-]DD',
+      auditFile: 'logs/.audit/error-audit.json',
       zippedArchive: true,
       maxSize: '20m',
       maxFiles: '30d',
-      format: fileFormat,
+      format,
     });
   }
 
   constructor() {
-    const prettyFormat = LoggerService.buildPrettyFormat();
+    const consoleFormat = LoggerService.buildConsoleFormat();
     const fileFormat = LoggerService.buildFileFormat();
 
     this.logger = winston.createLogger({
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       transports: [
-        new winston.transports.Console({ format: prettyFormat }),
-        LoggerService.buildHourlyRotateTransport(fileFormat),
-        LoggerService.buildHourlyErrorRotateTransport(fileFormat),
+        new winston.transports.Console({ format: consoleFormat }),
+        LoggerService.buildDailyRotateTransport(fileFormat),
+        LoggerService.buildErrorRotateTransport(fileFormat),
       ],
     });
   }
 
   /**
-   * Journalise un message de niveau `info`.
+   * Journalise un message informatif standard (INFO).
    *
-   * @param message - Message à journaliser.
-   * @param context - Contexte optionnel (ex. nom du service/module).
+   * @param {string} message - Message à consigner
+   * @param {string} [context] - Contexte d'exécution optionnel
    */
   log(message: string, context?: string): void {
     this.logger.info(message, { context: context ?? '' });
   }
 
   /**
-   * Journalise un message de niveau `error`.
+   * Journalise une erreur applicative critique (ERROR).
    *
-   * @param message - Message d'erreur à journaliser.
-   * @param trace - Stack trace optionnelle associée à l'erreur.
-   * @param context - Contexte optionnel (ex. nom du service/module).
+   * @param {string} message - Message d'erreur
+   * @param {string} [trace] - Stack trace de l'erreur
+   * @param {string} [context] - Contexte d'exécution
    */
   error(message: string, trace?: string, context?: string): void {
     this.logger.error(message, { trace, context: context ?? '' });
   }
 
   /**
-   * Journalise un message de niveau `warn`.
+   * Journalise un avertissement applicatif (WARN).
    *
-   * @param message - Message d'avertissement à journaliser.
-   * @param context - Contexte optionnel (ex. nom du service/module).
+   * @param {string} message - Message d'avertissement
+   * @param {string} [context] - Contexte d'exécution
    */
   warn(message: string, context?: string): void {
     this.logger.warn(message, { context: context ?? '' });
   }
 
   /**
-   * Journalise un message de niveau `debug`.
+   * Journalise un message de débogage (DEBUG).
    *
-   * @param message - Message de débogage à journaliser.
-   * @param context - Contexte optionnel (ex. nom du service/module).
+   * @param {string} message - Message de diagnostic
+   * @param {string} [context] - Contexte d'exécution
    */
   debug(message: string, context?: string): void {
     this.logger.debug(message, { context: context ?? '' });
   }
 
   /**
-   * Journalise un message de niveau `verbose`.
+   * Journalise un message verbeux de bas niveau (VERBOSE).
    *
-   * @param message - Message détaillé à journaliser.
-   * @param context - Contexte optionnel (ex. nom du service/module).
+   * @param {string} message - Message détaillé
+   * @param {string} [context] - Contexte d'exécution
    */
   verbose(message: string, context?: string): void {
     this.logger.verbose(message, { context: context ?? '' });
+  }
+
+  /**
+   * Journalise une erreur fatale entraînant l'arrêt de l'application (FATAL).
+   *
+   * @param {string} message - Message fatal
+   * @param {string} [trace] - Trace de l'erreur
+   * @param {string} [context] - Contexte
+   */
+  fatal(message: string, trace?: string, context?: string): void {
+    this.logger.error(`[FATAL] ${message}`, { trace, context: context ?? '' });
   }
 }

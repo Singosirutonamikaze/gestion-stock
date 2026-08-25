@@ -1,4 +1,11 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../shared/enums/user-role-enum';
 
@@ -10,23 +17,31 @@ import { UserRole } from '../../../shared/enums/user-role-enum';
  * @public
  */
 export class UpdateUserDto {
-  @ApiPropertyOptional({ example: 'jean.dupont@entreprise.com', description: 'Nouvelle adresse email' })
+  @ApiPropertyOptional({
+    example: 'kodjo.koffie@entreprise.com',
+    description: 'Nouvelle adresse email',
+  })
   @IsOptional()
-  @IsEmail({}, { message: 'L\'adresse email doit être valide' })
+  @IsEmail({}, { message: "L'adresse email doit être valide" })
   email?: string;
 
-  @ApiPropertyOptional({ example: 'NouveauMotDePasse123!', description: 'Nouveau mot de passe' })
+  @ApiPropertyOptional({
+    example: 'NouveauMotDePasse123!',
+    description: 'Nouveau mot de passe',
+  })
   @IsOptional()
   @IsString()
-  @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' })
+  @MinLength(8, {
+    message: 'Le mot de passe doit contenir au moins 8 caractères',
+  })
   password?: string;
 
-  @ApiPropertyOptional({ example: 'Jean', description: 'Nouveau prénom' })
+  @ApiPropertyOptional({ example: 'Kodjo', description: 'Nouveau prénom' })
   @IsOptional()
   @IsString()
   firstName?: string;
 
-  @ApiPropertyOptional({ example: 'Dupont', description: 'Nouveau nom' })
+  @ApiPropertyOptional({ example: 'Koffie', description: 'Nouveau nom' })
   @IsOptional()
   @IsString()
   lastName?: string;

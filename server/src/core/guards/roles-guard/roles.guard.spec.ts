@@ -28,7 +28,7 @@ describe('RolesGuard', () => {
     expect(guard).toBeDefined();
   });
 
-  it('doit autoriser l\'acces aux routes publiques sans restriction', () => {
+  it("doit autoriser l'acces aux routes publiques sans restriction", () => {
     mockReflector.getAllAndOverride.mockReturnValue(undefined);
     const context = createMockContext();
 
@@ -69,17 +69,23 @@ describe('RolesGuard', () => {
     mockReflector.getAllAndOverride
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce({ resource: RESOURCE.STOCK, operation: OPERATION.MOVE });
+      .mockReturnValueOnce({
+        resource: RESOURCE.STOCK,
+        operation: OPERATION.MOVE,
+      });
 
     const context = createMockContext({ role: UserRole.STOCK_KEEPER });
     expect(guard.canActivate(context)).toBe(true);
   });
 
-  it('doit refuser un acces par couple Ressource et Operation si le role ne l\'a pas', () => {
+  it("doit refuser un acces par couple Ressource et Operation si le role ne l'a pas", () => {
     mockReflector.getAllAndOverride
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce({ resource: RESOURCE.USERS, operation: OPERATION.RESTORE });
+      .mockReturnValueOnce({
+        resource: RESOURCE.USERS,
+        operation: OPERATION.RESTORE,
+      });
 
     const context = createMockContext({ role: UserRole.SALES });
     expect(guard.canActivate(context)).toBe(false);

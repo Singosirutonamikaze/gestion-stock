@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole, OperationType } from '../../../shared/enums/user-role-enum';
 import {
@@ -59,8 +55,8 @@ export class RolesGuard implements CanActivate {
       operation: OperationType;
     }>(RESOURCE_KEY, [context.getHandler(), context.getClass()]);
 
-    const hasRolesRestriction = Boolean(requiredRoles?.length);
-    const hasPermissionsRestriction = Boolean(requiredPermissions?.length);
+    const hasRolesRestriction = (requiredRoles?.length ?? 0) > 0;
+    const hasPermissionsRestriction = (requiredPermissions?.length ?? 0) > 0;
     const hasResourceRestriction = Boolean(resourceMetadata);
 
     // Si aucune restriction n'est posée, la route est considérée comme accessible/publique
@@ -69,7 +65,9 @@ export class RolesGuard implements CanActivate {
       !hasPermissionsRestriction &&
       !hasResourceRestriction;
 
-    const request = context.switchToHttp().getRequest<{ user?: RequestUserPayload }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ user?: RequestUserPayload }>();
     const user = request.user;
     const hasUser = Boolean(user?.role);
 

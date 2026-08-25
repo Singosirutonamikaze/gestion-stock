@@ -10,7 +10,11 @@
  * @since 0.0.1
  * @public
  */
-export interface IBaseRepository<T, CreateData = Partial<T>, UpdateData = Partial<T>> {
+export interface IBaseRepository<
+  T,
+  CreateData = Partial<T>,
+  UpdateData = Partial<T>,
+> {
   /**
    * Recherche et extrait une entité unique à partir de son identifiant unique UUID.
    *

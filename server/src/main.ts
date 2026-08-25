@@ -1,5 +1,6 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import boxen from 'boxen';
 import gradient from 'gradient-string';
 import helmet from 'helmet';
@@ -10,7 +11,9 @@ import { GlobalHttpExceptionFilter } from './core/filters/http-exception-filter/
 import { PrismaExceptionFilter } from './core/filters/prisma-exception-filter/prisma-exception.filter';
 import { LoggingInterceptor } from './core/interceptors/logging-interceptor/logging.interceptor';
 import { ResponseTransformInterceptor } from './core/interceptors/transform-response-interceptor/transform-response.interceptor';
+import { AppValidationPipe } from './core/pipes/validation-pipe/validation.pipe';
 import { setupSwagger } from './core/swagger/swagger-config/swagger.config';
+import { LoggerService } from './core/logger/logger-service/logger.service';
 
 type EnvColorFn = (text: string) => string;
 
@@ -51,9 +54,16 @@ function printStartupBanner(env: string, port: number, nodeVersion: string) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: false,
-    bufferLogs: false,
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+
+  const logger = app.get(LoggerService);
+  app.useLogger(logger);
+
+  // Distribution des fichiers statiques téléversés (ex: /uploads/users/:id/profile/avatar.png)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
   });
 
   const configService = app.get(AppConfigService);
@@ -65,7 +75,13 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrcAttr: ["'unsafe-inline'"],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+          ],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
         },
       },
@@ -93,16 +109,7 @@ async function bootstrap() {
   );
 
   // Pipe de validation global anti-pollution de prototype & nettoyage HTML/XSS
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: false,
-      },
-    }),
-  );
+  app.useGlobalPipes(new AppValidationPipe());
 
   // Documentation Swagger uniquement en mode développement
   if (configService.nodeEnv !== 'production') {

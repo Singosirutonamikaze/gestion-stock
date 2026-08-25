@@ -8,12 +8,18 @@ import { ApiProperty } from '@nestjs/swagger';
  * @public
  */
 export class AuthResponseDto {
-  @ApiProperty({ example: 'eyJhbGciOi...', description: 'Jeton d\'accès JWT' })
-  accessToken: string;
+  @ApiProperty({ example: 'eyJhbGciOi...', description: "Jeton d'accès JWT" })
+  accessToken!: string;
 
-  @ApiProperty({ example: 'eyJhbGciOi...', description: 'Jeton de rafraîchissement JWT' })
-  refreshToken: string;
+  @ApiProperty({
+    example: 'eyJhbGciOi...',
+    description: 'Jeton de rafraîchissement JWT',
+  })
+  refreshToken!: string;
 
-  @ApiProperty({ example: 900, description: 'Durée de validité du jeton d\'accès en secondes' })
-  expiresIn: number;
+  @ApiProperty({
+    example: 900,
+    description: "Durée de validité du jeton d'accès en secondes",
+  })
+  expiresIn!: number;
 }

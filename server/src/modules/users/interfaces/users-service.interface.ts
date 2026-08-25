@@ -64,4 +64,37 @@ export interface IUsersService {
    * @async
    */
   softDelete(id: string): Promise<void>;
+
+  /**
+   * Récupère les statistiques et agrégations des utilisateurs du système.
+   *
+   * @param {import('../dto/user-statistics.dto').UserStatsQueryDto} [query] - Filtres temporels optionnels
+   * @returns {Promise<import('../dto/user-statistics.dto').UserStatisticsDto>} Métriques consolidées
+   * @async
+   */
+  getStatistics(
+    query?: import('../dto/user-statistics.dto').UserStatsQueryDto,
+  ): Promise<import('../dto/user-statistics.dto').UserStatisticsDto>;
+
+  /**
+   * Met à jour la photo de profil (avatar) d'un utilisateur et nettoie l'ancien fichier le cas échéant.
+   *
+   * @param {string} id - Identifiant unique de l'utilisateur
+   * @param {Express.Multer.File} file - Fichier image téléversé
+   * @returns {Promise<UserResponseDto>} L'utilisateur mis à jour avec son nouvel URL d'avatar
+   * @throws {NotFoundException} Si l'utilisateur n'existe pas
+   * @throws {BadRequestException} Si aucun fichier valide n'a été fourni
+   * @async
+   */
+  uploadAvatar(id: string, file: Express.Multer.File): Promise<UserResponseDto>;
+
+  /**
+   * Supprime l'avatar actuel de l'utilisateur du disque et réinitialise son champ avatarUrl.
+   *
+   * @param {string} id - Identifiant unique de l'utilisateur
+   * @returns {Promise<UserResponseDto>} L'utilisateur mis à jour
+   * @throws {NotFoundException} Si l'utilisateur n'existe pas
+   * @async
+   */
+  removeAvatar(id: string): Promise<UserResponseDto>;
 }
