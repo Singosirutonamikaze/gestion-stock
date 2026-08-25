@@ -6,21 +6,32 @@ import { UserQueryDto } from '../dto/user-query.dto';
 import { IUsersRepository } from '../interfaces/users-repository.interface';
 
 /**
- * Repository d'accès aux données utilisateurs via Prisma.
+ * Implémentation du repository des utilisateurs (`UsersRepository`) reposant sur l'ORM Prisma.
+ * Encapsule l'intégralité des requêtes SQL/Prisma sur la table `users`.
  *
+ * @implements {IUsersRepository}
+ * @see IUsersRepository
+ * @see PrismaService
  * @author SINGO Yao Dieu Donnée
  * @since 0.0.1
  * @public
  */
 @Injectable()
 export class UsersRepository implements IUsersRepository {
+  /**
+   * Injection de dépendances du service Prisma centralisé.
+   *
+   * @param {PrismaService} prisma - Le service client Prisma pour PostgreSQL
+   */
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Récupère tous les utilisateurs avec pagination et filtres.
+   * Récupère la liste paginée et filtrée des utilisateurs depuis la table `users`.
+   * Gère les filtres dynamiques par recherche textuelle (email/prénom/nom), rôle système et statut actif.
    *
-   * @param {UserQueryDto} query - Les paramètres de pagination et filtres
-   * @returns {Promise<User[]>} La liste des utilisateurs
+   * @param {UserQueryDto} query - Paramètres de requête HTTP (page, limit, search, role, isActive)
+   * @returns {Promise<User[]>} Tableau d'objets utilisateur Prisma
+   * @async
    */
   async findAll(query: UserQueryDto): Promise<User[]> {
     const { page = 1, limit = 20, search, role, isActive } = query;
@@ -45,10 +56,11 @@ export class UsersRepository implements IUsersRepository {
   }
 
   /**
-   * Compte le nombre d'utilisateurs correspondant aux filtres.
+   * Calcule le nombre total d'enregistrements correspondant aux filtres fournis.
    *
-   * @param {UserQueryDto} query - Les paramètres de filtres
-   * @returns {Promise<number>} Le nombre d'utilisateurs
+   * @param {UserQueryDto} query - Filtres appliqués à la requête
+   * @returns {Promise<number>} Le nombre total de lignes correspondantes
+   * @async
    */
   async count(query: UserQueryDto): Promise<number> {
     const { search, role, isActive } = query;
@@ -68,30 +80,33 @@ export class UsersRepository implements IUsersRepository {
   }
 
   /**
-   * Récupère un utilisateur par son ID.
+   * Recherche un utilisateur par son identifiant UUID unique.
    *
-   * @param {string} id - L'ID de l'utilisateur
-   * @returns {Promise<User | null>} L'utilisateur ou null
+   * @param {string} id - L'identifiant unique (UUID v4) de l'utilisateur
+   * @returns {Promise<User | null>} L'entité Prisma User trouvée ou null si inexistante
+   * @async
    */
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
   /**
-   * Récupère un utilisateur par son email.
+   * Recherche un utilisateur par son adresse email unique.
    *
-   * @param {string} email - L'email de l'utilisateur
-   * @returns {Promise<User | null>} L'utilisateur ou null
+   * @param {string} email - L'adresse email de l'utilisateur
+   * @returns {Promise<User | null>} L'entité Prisma User trouvée ou null si inexistante
+   * @async
    */
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
   /**
-   * Crée un nouvel utilisateur.
+   * Insère un nouvel utilisateur dans la base de données.
    *
-   * @param {CreateUserDto & { password: string }} data - Les données de création
-   * @returns {Promise<User>} L'utilisateur créé
+   * @param {CreateUserDto & { password: string }} data - Données de création avec le mot de passe pré-haché
+   * @returns {Promise<User>} L'enregistrement utilisateur créé
+   * @async
    */
   async create(data: CreateUserDto & { password: string }): Promise<User> {
     return this.prisma.user.create({
@@ -106,11 +121,12 @@ export class UsersRepository implements IUsersRepository {
   }
 
   /**
-   * Met à jour un utilisateur.
+   * Met à jour partiellement un enregistrement utilisateur existant.
    *
-   * @param {string} id - L'ID de l'utilisateur
-   * @param {Partial<User>} data - Les données de mise à jour
-   * @returns {Promise<User>} L'utilisateur mis à jour
+   * @param {string} id - Identifiant unique de l'utilisateur
+   * @param {Partial<User>} data - Dictionnaire des modifications
+   * @returns {Promise<User>} L'enregistrement utilisateur mis à jour
+   * @async
    */
   async update(id: string, data: Partial<User>): Promise<User> {
     return this.prisma.user.update({
@@ -120,10 +136,11 @@ export class UsersRepository implements IUsersRepository {
   }
 
   /**
-   * Désactive un utilisateur (soft delete — isActive = false).
+   * Désactive logiquement un utilisateur en positionnant `isActive = false`.
    *
-   * @param {string} id - L'ID de l'utilisateur
+   * @param {string} id - Identifiant unique de l'utilisateur à désactiver
    * @returns {Promise<void>}
+   * @async
    */
   async softDelete(id: string): Promise<void> {
     await this.prisma.user.update({
