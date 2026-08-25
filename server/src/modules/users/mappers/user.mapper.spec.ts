@@ -12,7 +12,7 @@ describe('UserMapper', () => {
       lastName: 'Dupont',
       phone: null,
       avatarUrl: null,
-      role: 'ADMINISTRATOR' as any,
+      role: UserRole.ADMINISTRATOR,
       department: null,
       jobTitle: null,
       isActive: true,
@@ -33,7 +33,5 @@ describe('UserMapper', () => {
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
     });
-
-    expect((dto as any).password).toBeUndefined();
   });
 });

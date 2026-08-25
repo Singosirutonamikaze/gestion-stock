@@ -46,7 +46,7 @@ export class UsersRepository implements IUsersRepository {
             { lastName: { contains: search, mode: 'insensitive' } },
           ],
         }),
-        ...(role && { role: role as any }),
+        ...(role && { role }),
         ...(isActive !== undefined && { isActive }),
       },
       skip,
@@ -73,7 +73,7 @@ export class UsersRepository implements IUsersRepository {
             { lastName: { contains: search, mode: 'insensitive' } },
           ],
         }),
-        ...(role && { role: role as any }),
+        ...(role && { role }),
         ...(isActive !== undefined && { isActive }),
       },
     });
@@ -115,7 +115,7 @@ export class UsersRepository implements IUsersRepository {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role as any,
+        role: data.role,
       },
     });
   }

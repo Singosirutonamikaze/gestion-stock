@@ -3,12 +3,13 @@ import { UsersRepository } from './users.repository';
 import { PrismaService } from '../../../core/database/prisma-service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
 import { UserQueryDto } from '../dto/user-query.dto';
+import { User } from '@prisma/client';
 
 describe('UsersRepository', () => {
   let repository: UsersRepository;
   let prismaService: jest.Mocked<PrismaService>;
 
-  const mockUser = {
+  const mockUser: User = {
     id: 'usr-1',
     email: 'test@example.com',
     password: 'hashedpassword',
@@ -16,7 +17,7 @@ describe('UsersRepository', () => {
     lastName: 'Dupont',
     phone: null,
     avatarUrl: null,
-    role: UserRole.ADMINISTRATOR as any,
+    role: UserRole.ADMINISTRATOR,
     department: null,
     jobTitle: null,
     isActive: true,

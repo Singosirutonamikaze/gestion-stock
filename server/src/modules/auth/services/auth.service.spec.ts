@@ -8,6 +8,7 @@ import { RedisService } from '../../../core/database/redis-service';
 import { AppConfigService } from '../../../core/config/config-service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
 import { User } from '@prisma/client';
+import { JwtPayload } from '../types/jwt-payload.type';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -28,7 +29,7 @@ describe('AuthService', () => {
     lastName: 'Dupont',
     phone: null,
     avatarUrl: null,
-    role: UserRole.ADMINISTRATOR as any,
+    role: UserRole.ADMINISTRATOR,
     department: null,
     jobTitle: null,
     isActive: true,
@@ -179,8 +180,8 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('doit rafraîchir la paire de tokens si le refresh token est valide dans Redis', async () => {
-      const payload = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
-      jwtService.verify.mockReturnValue(payload as any);
+      const payload: JwtPayload = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
+      jwtService.verify.mockReturnValue(payload);
       redisService.isRefreshTokenValid.mockResolvedValue(true);
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 

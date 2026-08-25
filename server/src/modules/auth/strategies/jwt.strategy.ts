@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
 import { AppConfigService } from '../../../core/config/config-service';
 import { RedisService } from '../../../core/database/redis-service';
 import { JwtPayload } from '../types/jwt-payload.type';
@@ -32,11 +33,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * Valide le payload JWT décodé et vérifie que le token n'est pas révoqué/blacklisté.
    *
    * @param {Request} req - Requête HTTP entrante
-   * @param {unknown} payload - Payload JWT décodé
+   * @param {Record<string, unknown>} payload - Payload JWT décodé
    * @returns {Promise<JwtPayload>} Le payload validé attaché à `req.user`
    * @throws {UnauthorizedException} Si le payload est invalide ou le token révoqué
    */
-  async validate(req: any, payload: unknown): Promise<JwtPayload> {
+  async validate(req: Request, payload: Record<string, unknown>): Promise<JwtPayload> {
     const rawToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
     if (rawToken) {
       const isBlacklisted = await this.redisService.isAccessTokenBlacklisted(rawToken);

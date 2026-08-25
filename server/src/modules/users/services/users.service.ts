@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../repositories/users.repository';
 import { UserMapper } from '../mappers/user.mapper';
@@ -97,7 +98,7 @@ export class UsersService {
       throw new NotFoundException(`Utilisateur avec l'ID ${id} introuvable`);
     }
 
-    const updateData: Record<string, any> = { ...dto };
+    const updateData: Partial<User> = { ...dto };
 
     if (dto.password) {
       updateData.password = await bcrypt.hash(dto.password, 12);

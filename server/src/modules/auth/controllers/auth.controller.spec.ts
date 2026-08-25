@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Request } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
+import { JwtPayload } from '../types/jwt-payload.type';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -40,9 +42,9 @@ describe('AuthController', () => {
       service.login.mockResolvedValue(mockTokenPair);
 
       const loginDto = { email: 'test@example.com', password: 'Password123!' };
-      const req = { ip: '127.0.0.1', headers: { 'user-agent': 'Jest' } };
+      const req = { ip: '127.0.0.1', headers: { 'user-agent': 'Jest' } } as unknown as Request;
 
-      const result = await controller.login(loginDto, req as any);
+      const result = await controller.login(loginDto, req);
 
       expect(result).toEqual(mockTokenPair);
       expect(service.login).toHaveBeenCalledWith(loginDto, {
@@ -86,11 +88,11 @@ describe('AuthController', () => {
     it('doit appeler authService.logout avec sub et le refreshToken', async () => {
       service.logout.mockResolvedValue();
 
-      const user = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
+      const user: JwtPayload = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
       const dto = { refreshToken: 'refresh_token_mock' };
-      const req = { headers: { authorization: 'Bearer access_token_mock' } };
+      const req = { headers: { authorization: 'Bearer access_token_mock' } } as unknown as Request;
 
-      const result = await controller.logout(user, dto, req as any);
+      const result = await controller.logout(user, dto, req);
 
       expect(result).toEqual({ message: 'Déconnexion réussie' });
       expect(service.logout).toHaveBeenCalledWith('usr-123', 'refresh_token_mock', 'access_token_mock');
@@ -101,7 +103,7 @@ describe('AuthController', () => {
     it('doit appeler authService.logoutAll avec l\'id de l\'utilisateur', async () => {
       service.logoutAll.mockResolvedValue();
 
-      const user = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
+      const user: JwtPayload = { sub: 'usr-123', email: 'test@example.com', role: UserRole.ADMINISTRATOR };
 
       const result = await controller.logoutAll(user);
 

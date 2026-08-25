@@ -63,7 +63,7 @@ export class AuthService {
     const tokenPair = await this.generateTokenPair({
       sub: user.id,
       email: user.email,
-      role: user.role as unknown as UserRole,
+      role: user.role,
     });
 
     // Enregistrer le refresh token dans Redis (7 jours TTL)
@@ -97,14 +97,14 @@ export class AuthService {
         password: passwordHash,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        role: (dto.role ?? UserRole.ADMINISTRATOR) as any,
+        role: dto.role ?? UserRole.ADMINISTRATOR,
       },
     });
 
     const tokenPair = await this.generateTokenPair({
       sub: user.id,
       email: user.email,
-      role: user.role as unknown as UserRole,
+      role: user.role,
     });
 
     const refreshTtl = this.parseExpiry(this.configService.jwtRefreshExpiresIn);
@@ -154,7 +154,7 @@ export class AuthService {
     const tokenPair = await this.generateTokenPair({
       sub: user.id,
       email: user.email,
-      role: user.role as unknown as UserRole,
+      role: user.role,
     });
 
     const refreshTtl = this.parseExpiry(this.configService.jwtRefreshExpiresIn);
@@ -205,7 +205,7 @@ export class AuthService {
       { ...payload },
       {
         secret: this.configService.jwtSecret,
-        expiresIn: this.configService.jwtAccessExpiresIn as any,
+        expiresIn: this.configService.jwtAccessExpiresIn,
       },
     );
 
@@ -213,7 +213,7 @@ export class AuthService {
       { ...payload },
       {
         secret: this.configService.jwtRefreshSecret,
-        expiresIn: this.configService.jwtRefreshExpiresIn as any,
+        expiresIn: this.configService.jwtRefreshExpiresIn,
       },
     );
 

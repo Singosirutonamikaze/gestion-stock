@@ -23,7 +23,7 @@ describe('UsersService', () => {
     lastName: 'Dupont',
     phone: null,
     avatarUrl: null,
-    role: 'ADMINISTRATOR' as any,
+    role: UserRole.ADMINISTRATOR,
     department: null,
     jobTitle: null,
     isActive: true,

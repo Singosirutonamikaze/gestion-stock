@@ -1,12 +1,6 @@
-/**
- * Énumération des rôles système disponibles pour les utilisateurs.
- */
-export enum UserRole {
-  ADMINISTRATOR = 'ADMINISTRATOR',
-  MANAGER = 'MANAGER',
-  STOCK_KEEPER = 'STOCK_KEEPER',
-  SALES = 'SALES',
-}
+import { UserRole } from '@prisma/client';
+
+export { UserRole };
 
 /**
  * Constante regroupant les opérations CRUD et avancées du système.
