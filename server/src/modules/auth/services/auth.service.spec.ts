@@ -9,6 +9,11 @@ import { AppConfigService } from '../../../core/config/config-service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
 import { User } from '@prisma/client';
 
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
 describe('AuthService', () => {
   let service: AuthService;
   let prismaService: jest.Mocked<PrismaService>;
@@ -33,6 +38,8 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const mockPrisma = {
       user: {
         findUnique: jest.fn(),
@@ -85,7 +92,7 @@ describe('AuthService', () => {
     it('doit retourner une paire de tokens lors d\'une connexion réussie', async () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
       (prismaService.user.update as jest.Mock).mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       jwtService.sign
         .mockReturnValueOnce('access_token_str')
@@ -119,7 +126,7 @@ describe('AuthService', () => {
 
     it('doit lever UnauthorizedException si le mot de passe est incorrect', async () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const meta = { ipAddress: '127.0.0.1', userAgent: 'Jest' };
       const dto = { email: 'test@example.com', password: 'WrongPassword' };
@@ -132,7 +139,7 @@ describe('AuthService', () => {
     it('doit hacher le mot de passe, créer le compte et retourner les tokens', async () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
       (prismaService.user.create as jest.Mock).mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => '$2b$12$hashedPassword');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('$2b$12$hashedPassword');
 
       jwtService.sign
         .mockReturnValueOnce('access_token_str')

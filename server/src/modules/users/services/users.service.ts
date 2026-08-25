@@ -76,7 +76,10 @@ export class UsersService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.usersRepository.create({ ...dto, password: passwordHash });
+    const user = await this.usersRepository.create({
+      ...dto,
+      password: passwordHash,
+    });
     return UserMapper.toResponseDto(user);
   }
 

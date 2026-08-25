@@ -6,6 +6,11 @@ import { UsersRepository } from '../repositories/users.repository';
 import { UserRole } from '../../../shared/enums/user-role-enum';
 import { User } from '@prisma/client';
 
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
 describe('UsersService', () => {
   let service: UsersService;
   let repository: jest.Mocked<UsersRepository>;
@@ -28,6 +33,8 @@ describe('UsersService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const mockRepo = {
       findAll: jest.fn(),
       count: jest.fn(),
@@ -105,8 +112,7 @@ describe('UsersService', () => {
     it('doit hacher le mot de passe et créer l\'utilisateur', async () => {
       repository.findByEmail.mockResolvedValue(null);
       repository.create.mockResolvedValue(mockPrismaUser);
-
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPasswordKeyHere');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPasswordKeyHere');
 
       const dto = {
         email: 'jean.dupont@test.com',
@@ -144,8 +150,7 @@ describe('UsersService', () => {
     it('doit mettre à jour les données et hacher le nouveau mot de passe si fourni', async () => {
       repository.findById.mockResolvedValue(mockPrismaUser);
       repository.update.mockResolvedValue({ ...mockPrismaUser, firstName: 'Pierre' });
-
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'newHashedPassword');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
 
       const dto = { firstName: 'Pierre', password: 'NewPassword123!' };
       const result = await service.update('usr-123', dto);
