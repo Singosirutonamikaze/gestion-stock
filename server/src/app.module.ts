@@ -7,6 +7,8 @@ import { ConfigModule } from './core/config/config-module';
 import { DatabaseModule } from './core/database/database-module';
 import { HealthModule } from './core/health/health-module/health.module';
 import { LoggerModule } from './core/logger/logger-module/logger.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -14,10 +16,12 @@ import { LoggerModule } from './core/logger/logger-module/logger.module';
     DatabaseModule,
     LoggerModule,
     HealthModule,
+    AuthModule,
+    UsersModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
-        limit: 100, // max 100 requetes par IP par minute
+        limit: 100, // max 100 requêtes par IP par minute
       },
     ]),
   ],

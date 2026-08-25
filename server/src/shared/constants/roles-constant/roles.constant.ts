@@ -29,8 +29,10 @@ export type ResourceType = (typeof RESOURCE)[keyof typeof RESOURCE];
  * buildPermission('products', 'create');
  * // => "products:create"
  */
-export const buildPermission = (resource: ResourceType, operation: OperationType): string =>
-  `${resource}:${operation}`;
+export const buildPermission = (
+  resource: ResourceType,
+  operation: OperationType,
+): string => `${resource}:${operation}`;
 
 /**
  * Registre des permissions applicatives générées pour chaque ressource et opération.
@@ -85,9 +87,18 @@ export const Permission = Object.freeze({
   STOCK_LIST: buildPermission(RESOURCE.STOCK, OPERATION.LIST),
   STOCK_MOVE: buildPermission(RESOURCE.STOCK, OPERATION.MOVE),
 
-  STOCK_MOVEMENTS_CREATE: buildPermission(RESOURCE.STOCK_MOVEMENTS, OPERATION.CREATE),
-  STOCK_MOVEMENTS_READ: buildPermission(RESOURCE.STOCK_MOVEMENTS, OPERATION.READ),
-  STOCK_MOVEMENTS_LIST: buildPermission(RESOURCE.STOCK_MOVEMENTS, OPERATION.LIST),
+  STOCK_MOVEMENTS_CREATE: buildPermission(
+    RESOURCE.STOCK_MOVEMENTS,
+    OPERATION.CREATE,
+  ),
+  STOCK_MOVEMENTS_READ: buildPermission(
+    RESOURCE.STOCK_MOVEMENTS,
+    OPERATION.READ,
+  ),
+  STOCK_MOVEMENTS_LIST: buildPermission(
+    RESOURCE.STOCK_MOVEMENTS,
+    OPERATION.LIST,
+  ),
 
   // Commandes
   ORDERS_CREATE: buildPermission(RESOURCE.ORDERS, OPERATION.CREATE),
@@ -111,89 +122,90 @@ export type PermissionType = (typeof Permission)[keyof typeof Permission];
  * @readonly
  * @type {Record<UserRole, readonly string[]>}
  */
-export const ROLE_PERMISSIONS: Record<UserRole, readonly string[]> = Object.freeze({
-  [UserRole.ADMINISTRATOR]: Object.freeze(Object.values(Permission)),
+export const ROLE_PERMISSIONS: Record<UserRole, readonly string[]> =
+  Object.freeze({
+    [UserRole.ADMINISTRATOR]: Object.freeze(Object.values(Permission)),
 
-  [UserRole.MANAGER]: Object.freeze([
-    Permission.PRODUCTS_CREATE,
-    Permission.PRODUCTS_READ,
-    Permission.PRODUCTS_LIST,
-    Permission.PRODUCTS_UPDATE,
-    Permission.PRODUCTS_PATCH,
-    Permission.PRODUCTS_DELETE,
-    Permission.PRODUCTS_RESTORE,
+    [UserRole.MANAGER]: Object.freeze([
+      Permission.PRODUCTS_CREATE,
+      Permission.PRODUCTS_READ,
+      Permission.PRODUCTS_LIST,
+      Permission.PRODUCTS_UPDATE,
+      Permission.PRODUCTS_PATCH,
+      Permission.PRODUCTS_DELETE,
+      Permission.PRODUCTS_RESTORE,
 
-    Permission.CATEGORIES_CREATE,
-    Permission.CATEGORIES_READ,
-    Permission.CATEGORIES_LIST,
-    Permission.CATEGORIES_UPDATE,
-    Permission.CATEGORIES_PATCH,
-    Permission.CATEGORIES_DELETE,
+      Permission.CATEGORIES_CREATE,
+      Permission.CATEGORIES_READ,
+      Permission.CATEGORIES_LIST,
+      Permission.CATEGORIES_UPDATE,
+      Permission.CATEGORIES_PATCH,
+      Permission.CATEGORIES_DELETE,
 
-    Permission.SUPPLIERS_CREATE,
-    Permission.SUPPLIERS_READ,
-    Permission.SUPPLIERS_LIST,
-    Permission.SUPPLIERS_UPDATE,
-    Permission.SUPPLIERS_PATCH,
-    Permission.SUPPLIERS_DELETE,
+      Permission.SUPPLIERS_CREATE,
+      Permission.SUPPLIERS_READ,
+      Permission.SUPPLIERS_LIST,
+      Permission.SUPPLIERS_UPDATE,
+      Permission.SUPPLIERS_PATCH,
+      Permission.SUPPLIERS_DELETE,
 
-    Permission.WAREHOUSES_CREATE,
-    Permission.WAREHOUSES_READ,
-    Permission.WAREHOUSES_LIST,
-    Permission.WAREHOUSES_UPDATE,
-    Permission.WAREHOUSES_PATCH,
-    Permission.WAREHOUSES_DELETE,
+      Permission.WAREHOUSES_CREATE,
+      Permission.WAREHOUSES_READ,
+      Permission.WAREHOUSES_LIST,
+      Permission.WAREHOUSES_UPDATE,
+      Permission.WAREHOUSES_PATCH,
+      Permission.WAREHOUSES_DELETE,
 
-    Permission.STOCK_READ,
-    Permission.STOCK_LIST,
-    Permission.STOCK_MOVE,
-    Permission.STOCK_MOVEMENTS_CREATE,
-    Permission.STOCK_MOVEMENTS_READ,
-    Permission.STOCK_MOVEMENTS_LIST,
+      Permission.STOCK_READ,
+      Permission.STOCK_LIST,
+      Permission.STOCK_MOVE,
+      Permission.STOCK_MOVEMENTS_CREATE,
+      Permission.STOCK_MOVEMENTS_READ,
+      Permission.STOCK_MOVEMENTS_LIST,
 
-    Permission.ORDERS_CREATE,
-    Permission.ORDERS_READ,
-    Permission.ORDERS_LIST,
-    Permission.ORDERS_UPDATE,
-    Permission.ORDERS_PATCH,
-    Permission.ORDERS_DELETE,
+      Permission.ORDERS_CREATE,
+      Permission.ORDERS_READ,
+      Permission.ORDERS_LIST,
+      Permission.ORDERS_UPDATE,
+      Permission.ORDERS_PATCH,
+      Permission.ORDERS_DELETE,
 
-    Permission.REPORTS_READ,
-    Permission.REPORTS_LIST,
-  ]),
+      Permission.REPORTS_READ,
+      Permission.REPORTS_LIST,
+    ]),
 
-  [UserRole.STOCK_KEEPER]: Object.freeze([
-    Permission.PRODUCTS_READ,
-    Permission.PRODUCTS_LIST,
-    Permission.CATEGORIES_READ,
-    Permission.CATEGORIES_LIST,
-    Permission.WAREHOUSES_READ,
-    Permission.WAREHOUSES_LIST,
+    [UserRole.STOCK_KEEPER]: Object.freeze([
+      Permission.PRODUCTS_READ,
+      Permission.PRODUCTS_LIST,
+      Permission.CATEGORIES_READ,
+      Permission.CATEGORIES_LIST,
+      Permission.WAREHOUSES_READ,
+      Permission.WAREHOUSES_LIST,
 
-    Permission.STOCK_READ,
-    Permission.STOCK_LIST,
-    Permission.STOCK_MOVE,
-    Permission.STOCK_MOVEMENTS_CREATE,
-    Permission.STOCK_MOVEMENTS_READ,
-    Permission.STOCK_MOVEMENTS_LIST,
+      Permission.STOCK_READ,
+      Permission.STOCK_LIST,
+      Permission.STOCK_MOVE,
+      Permission.STOCK_MOVEMENTS_CREATE,
+      Permission.STOCK_MOVEMENTS_READ,
+      Permission.STOCK_MOVEMENTS_LIST,
 
-    Permission.ORDERS_READ,
-    Permission.ORDERS_LIST,
-  ]),
+      Permission.ORDERS_READ,
+      Permission.ORDERS_LIST,
+    ]),
 
-  [UserRole.SALES]: Object.freeze([
-    Permission.PRODUCTS_READ,
-    Permission.PRODUCTS_LIST,
-    Permission.CATEGORIES_READ,
-    Permission.CATEGORIES_LIST,
+    [UserRole.SALES]: Object.freeze([
+      Permission.PRODUCTS_READ,
+      Permission.PRODUCTS_LIST,
+      Permission.CATEGORIES_READ,
+      Permission.CATEGORIES_LIST,
 
-    Permission.STOCK_READ,
-    Permission.STOCK_LIST,
+      Permission.STOCK_READ,
+      Permission.STOCK_LIST,
 
-    Permission.ORDERS_CREATE,
-    Permission.ORDERS_READ,
-    Permission.ORDERS_LIST,
-    Permission.ORDERS_UPDATE,
-    Permission.ORDERS_PATCH,
-  ]),
-});
+      Permission.ORDERS_CREATE,
+      Permission.ORDERS_READ,
+      Permission.ORDERS_LIST,
+      Permission.ORDERS_UPDATE,
+      Permission.ORDERS_PATCH,
+    ]),
+  });

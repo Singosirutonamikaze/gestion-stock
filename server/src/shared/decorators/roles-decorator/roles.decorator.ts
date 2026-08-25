@@ -58,5 +58,7 @@ export const RequirePermissions = (...permissions: PermissionType[]) =>
  * @since 0.0.1
  * @public
  */
-export const AccessControl = (resource: ResourceType, operation: OperationType) =>
-  SetMetadata(RESOURCE_KEY, { resource, operation });
+export const AccessControl = (
+  resource: ResourceType,
+  operation: OperationType,
+) => SetMetadata(RESOURCE_KEY, { resource, operation });
