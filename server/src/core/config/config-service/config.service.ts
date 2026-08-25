@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 
+export type JwtExpiresString = `${number}${'s' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
 /**
  * Service centralisé pour le chargement et le typage strict des variables d'environnement.
  *
@@ -65,20 +67,20 @@ export class AppConfigService {
     return this.configService.get<string>('JWT_SECRET', 'secretKey');
   }
 
-  get jwtExpiresIn(): string {
-    return this.configService.get<string>('JWT_EXPIRES_IN', '1d');
+  get jwtExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>('JWT_EXPIRES_IN', '1d');
   }
 
-  get jwtAccessExpiresIn(): string {
-    return this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', this.jwtExpiresIn || '15m');
+  get jwtAccessExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>('JWT_ACCESS_EXPIRES_IN', '15m');
   }
 
   get jwtRefreshSecret(): string {
     return this.configService.get<string>('JWT_REFRESH_SECRET', 'refreshSecretKey');
   }
 
-  get jwtRefreshExpiresIn(): string {
-    return this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d');
+  get jwtRefreshExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>('JWT_REFRESH_EXPIRES_IN', '7d');
   }
 
   get clientUrl(): string {

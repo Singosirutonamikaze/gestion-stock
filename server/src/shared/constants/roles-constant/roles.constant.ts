@@ -208,4 +208,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly string[]> =
       Permission.ORDERS_UPDATE,
       Permission.ORDERS_PATCH,
     ]),
+
+    [UserRole.VIEWER]: Object.freeze([
+      Permission.PRODUCTS_READ,
+      Permission.PRODUCTS_LIST,
+      Permission.CATEGORIES_READ,
+      Permission.CATEGORIES_LIST,
+      Permission.STOCK_READ,
+      Permission.STOCK_LIST,
+      Permission.ORDERS_READ,
+      Permission.ORDERS_LIST,
+      Permission.REPORTS_READ,
+      Permission.REPORTS_LIST,
+    ]),
   });
