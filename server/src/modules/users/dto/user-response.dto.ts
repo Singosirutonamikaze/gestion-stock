@@ -27,6 +27,13 @@ export class UserResponseDto {
   @ApiProperty({ example: true })
   isActive!: boolean;
 
+  @ApiProperty({
+    example: '/uploads/users/usr-123/profile/avatar.jpg',
+    nullable: true,
+    required: false,
+  })
+  avatarUrl?: string | null;
+
   @ApiProperty({ example: '2026-08-24T12:00:00.000Z' })
   createdAt!: Date;
 

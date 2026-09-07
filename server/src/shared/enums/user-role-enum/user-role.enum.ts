@@ -1,6 +1,12 @@
-import { UserRole } from '@prisma/client';
+export const UserRole = {
+  ADMINISTRATOR: 'ADMINISTRATOR',
+  MANAGER: 'MANAGER',
+  STOCK_KEEPER: 'STOCK_KEEPER',
+  SALES: 'SALES',
+  VIEWER: 'VIEWER',
+} as const;
 
-export { UserRole };
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 /**
  * Constante regroupant les opérations CRUD et avancées du système.

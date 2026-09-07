@@ -30,6 +30,7 @@ describe('UserMapper', () => {
       lastName: 'Koffie',
       role: UserRole.ADMINISTRATOR,
       isActive: true,
+      avatarUrl: null,
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
     });

@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from '../services/users.service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
@@ -29,8 +28,8 @@ describe('UsersController', () => {
     updatedAt: new Date(),
   };
 
-  beforeEach(async () => {
-    const mockService = {
+  beforeEach(() => {
+    service = {
       findAll: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
@@ -40,14 +39,7 @@ describe('UsersController', () => {
       uploadAvatar: jest.fn(),
       removeAvatar: jest.fn(),
     };
-
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: mockService }],
-    }).compile();
-
-    controller = module.get<UsersController>(UsersController);
-    service = module.get(UsersService);
+    controller = new UsersController(service as unknown as UsersService);
   });
 
   it('doit être défini', () => {

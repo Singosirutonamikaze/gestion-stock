@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../services/auth.service';
 import { UserRole } from '../../../shared/enums/user-role-enum';
@@ -20,22 +19,15 @@ describe('AuthController', () => {
     expiresIn: 900,
   };
 
-  beforeEach(async () => {
-    const mockAuthService = {
+  beforeEach(() => {
+    service = {
       login: jest.fn(),
       register: jest.fn(),
       refresh: jest.fn(),
       logout: jest.fn(),
       logoutAll: jest.fn(),
     };
-
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: mockAuthService }],
-    }).compile();
-
-    controller = module.get<AuthController>(AuthController);
-    service = module.get(AuthService);
+    controller = new AuthController(service as unknown as AuthService);
   });
 
   it('doit être défini', () => {

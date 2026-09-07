@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { UsersRepository } from '../repositories/users.repository';
@@ -86,6 +90,7 @@ describe('UsersService', () => {
             lastName: 'Koffie',
             role: UserRole.ADMINISTRATOR,
             isActive: true,
+            avatarUrl: null,
             createdAt: mockPrismaUser.createdAt,
             updatedAt: mockPrismaUser.updatedAt,
           },
@@ -240,9 +245,9 @@ describe('UsersService', () => {
 
   describe('uploadAvatar', () => {
     it('doit lever BadRequestException si aucun fichier n’est transmis', async () => {
-      await expect(service.uploadAvatar('usr-123', undefined)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        async () => await service.uploadAvatar('usr-123', undefined),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('doit lever NotFoundException si l’utilisateur n’existe pas', async () => {

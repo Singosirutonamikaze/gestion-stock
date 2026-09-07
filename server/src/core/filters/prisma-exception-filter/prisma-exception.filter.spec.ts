@@ -16,15 +16,19 @@ const buildException = (
 describe('PrismaExceptionFilter', () => {
   let filter: PrismaExceptionFilter;
   let mockResponse: { status: jest.Mock; json: jest.Mock };
+  let responseBody: Record<string, unknown> | undefined;
   let mockRequest: { url: string };
   let mockHost: ArgumentsHost;
 
   beforeEach(() => {
     filter = new PrismaExceptionFilter();
+    responseBody = undefined;
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      json: jest.fn((body: Record<string, unknown>) => {
+        responseBody = body;
+      }),
     };
 
     mockRequest = { url: '/api/products' };
@@ -72,7 +76,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.error).toBe('Conflict');
   });
 
@@ -81,7 +86,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.error).toBe('Not Found');
   });
 
@@ -90,7 +96,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.error).toBe('Database Error');
   });
 
@@ -99,7 +106,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(typeof body.timestamp).toBe('string');
   });
 
@@ -108,7 +116,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.path).toBe('/api/products');
   });
 
@@ -119,7 +128,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.message as string).toContain('email');
     expect(body.message as string).toContain('username');
   });
@@ -129,7 +139,8 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = responseBody;
+    expect(body).toBeDefined();
     expect(body.statusCode).toBe(HttpStatus.CONFLICT);
   });
 

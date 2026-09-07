@@ -1,4 +1,4 @@
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, Logger } from '@nestjs/common';
 import { LoggingInterceptor } from './logging.interceptor';
 import { of, throwError } from 'rxjs';
 
@@ -8,6 +8,9 @@ describe('LoggingInterceptor', () => {
   let mockNext: { handle: jest.Mock };
 
   beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
     interceptor = new LoggingInterceptor();
 
     mockContext = {
@@ -22,6 +25,10 @@ describe('LoggingInterceptor', () => {
     mockNext = {
       handle: jest.fn().mockReturnValue(of({ status: 'ok' })),
     };
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('doit etre instancie', () => {

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
 import { JwtStrategy } from './jwt.strategy';
 import { AppConfigService } from '../../../core/config/config-service';
 import { RedisService } from '../../../core/database/redis-service';
@@ -51,7 +52,7 @@ describe('JwtStrategy', () => {
         headers: {
           authorization: 'Bearer valid.jwt.token',
         },
-      };
+      } as unknown as Request;
 
       const result = await strategy.validate(req, validPayload);
 
@@ -68,7 +69,7 @@ describe('JwtStrategy', () => {
         headers: {
           authorization: 'Bearer blacklisted.jwt.token',
         },
-      };
+      } as unknown as Request;
 
       await expect(strategy.validate(req, validPayload)).rejects.toThrow(
         UnauthorizedException,
@@ -78,7 +79,7 @@ describe('JwtStrategy', () => {
     it('doit lever UnauthorizedException si le payload ne respecte pas le schéma Zod', async () => {
       redisService.isAccessTokenBlacklisted.mockResolvedValue(false);
 
-      const req = { headers: {} };
+      const req = { headers: {} } as unknown as Request;
       const invalidPayload = { email: 'invalid-payload-without-sub' };
 
       await expect(strategy.validate(req, invalidPayload)).rejects.toThrow(

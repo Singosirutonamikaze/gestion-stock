@@ -137,7 +137,10 @@ export class LoggerService implements NestLoggerService {
     this.logger = winston.createLogger({
       level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       transports: [
-        new winston.transports.Console({ format: consoleFormat }),
+        new winston.transports.Console({
+          format: consoleFormat,
+          silent: process.env.NODE_ENV === 'test',
+        }),
         LoggerService.buildDailyRotateTransport(fileFormat),
         LoggerService.buildErrorRotateTransport(fileFormat),
       ],

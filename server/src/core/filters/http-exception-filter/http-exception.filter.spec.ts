@@ -4,15 +4,26 @@ import { GlobalHttpExceptionFilter } from './http-exception.filter';
 describe('GlobalHttpExceptionFilter', () => {
   let filter: GlobalHttpExceptionFilter;
   let mockResponse: { status: jest.Mock; json: jest.Mock };
+  let responseBody: Record<string, unknown> | undefined;
   let mockRequest: { url: string };
   let mockHost: ArgumentsHost;
 
+  const getResponseBody = (): Record<string, unknown> => {
+    if (!responseBody) {
+      throw new Error('La réponse JSON n’a pas été capturée');
+    }
+    return responseBody;
+  };
+
   beforeEach(() => {
     filter = new GlobalHttpExceptionFilter();
+    responseBody = undefined;
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      json: jest.fn((body: Record<string, unknown>) => {
+        responseBody = body;
+      }),
     };
 
     mockRequest = { url: '/api/test' };
@@ -69,7 +80,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(body.statusCode).toBe(HttpStatus.UNAUTHORIZED);
   });
 
@@ -78,7 +89,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(typeof body.timestamp).toBe('string');
   });
 
@@ -87,7 +98,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(body.path).toBe('&#x2F;api&#x2F;test');
   });
 
@@ -99,7 +110,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(body.message).toBe('Message simple');
   });
 
@@ -111,7 +122,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(body.message).toBe('Champ requis manquant');
   });
 
@@ -120,7 +131,7 @@ describe('GlobalHttpExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = mockResponse.json.mock.calls[0][0] as Record<string, unknown>;
+    const body = getResponseBody();
     expect(body.error).toBe('Internal Server Error');
   });
 

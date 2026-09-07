@@ -6,9 +6,19 @@ import {
   ALLOWED_IMAGE_MIME_TYPES,
 } from './file-upload.util';
 import type { Request } from 'express';
-import * as fs from 'fs';
+import { existsSync, unlinkSync } from 'node:fs';
+
+jest.mock('node:fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  unlinkSync: jest.fn(),
+}));
 
 describe('FileUploadUtil', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
   });
@@ -47,22 +57,18 @@ describe('FileUploadUtil', () => {
 
   describe('deleteUploadedFile', () => {
     it('ne fait rien si le chemin est indéfini ou vide', () => {
-      const existsSpy = jest.spyOn(fs, 'existsSync');
       deleteUploadedFile(undefined);
       deleteUploadedFile(null);
-      expect(existsSpy).not.toHaveBeenCalled();
+      expect(existsSync).not.toHaveBeenCalled();
     });
 
     it('supprime le fichier s’il existe sur le disque', () => {
-      const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-      const unlinkSpy = jest
-        .spyOn(fs, 'unlinkSync')
-        .mockImplementation(() => undefined);
+      (existsSync as unknown as jest.Mock).mockReturnValue(true);
 
       deleteUploadedFile('/uploads/users/usr-123/profile/avatar.jpg');
 
-      expect(existsSpy).toHaveBeenCalled();
-      expect(unlinkSpy).toHaveBeenCalled();
+      expect(existsSync).toHaveBeenCalled();
+      expect(unlinkSync).toHaveBeenCalled();
     });
   });
 });

@@ -25,6 +25,7 @@ export class UserMapper {
       lastName: user.lastName,
       role: user.role,
       isActive: user.isActive,
+      avatarUrl: user.avatarUrl,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

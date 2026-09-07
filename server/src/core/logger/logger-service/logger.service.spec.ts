@@ -5,11 +5,19 @@ describe('LoggerService', () => {
   let service: LoggerService;
 
   beforeEach(async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [LoggerService],
     }).compile();
 
     service = module.get<LoggerService>(LoggerService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('doit être défini', () => {
