@@ -1,6 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 
+export type JwtExpiresString = `${number}${'s' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
+/**
+ * Service centralisé pour le chargement et le typage strict des variables d'environnement.
+ *
+ * @author SINGO Yao Dieu Donnée
+ * @since 0.0.1
+ * @public
+ */
 @Injectable()
 export class AppConfigService {
   constructor(private readonly configService: NestConfigService) {}
@@ -39,15 +48,86 @@ export class AppConfigService {
 
   get databaseUrl(): string {
     const url = this.configService.get<string>('DATABASE_URL');
-    if (url) return url;
-    return `postgresql://${this.dbUser}:${this.dbPassword}@${this.dbHost}:${this.dbPort}/${this.dbName}?schema=${this.dbSchema}`;
+    return (
+      url ??
+      `postgresql://${this.dbUser}:${this.dbPassword}@${this.dbHost}:${this.dbPort}/${this.dbName}?schema=${this.dbSchema}`
+    );
+  }
+
+  get redisHost(): string {
+    return this.configService.get<string>('REDIS_HOST', 'localhost');
+  }
+
+  get redisPort(): number {
+    return this.configService.get<number>('REDIS_PORT', 6379);
+  }
+
+  get redisPassword(): string | undefined {
+    return this.configService.get<string>('REDIS_PASSWORD');
   }
 
   get jwtSecret(): string {
     return this.configService.get<string>('JWT_SECRET', 'secretKey');
   }
 
-  get jwtExpiresIn(): string {
-    return this.configService.get<string>('JWT_EXPIRES_IN', '1d');
+  get jwtExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>('JWT_EXPIRES_IN', '1d');
+  }
+
+  get jwtAccessExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>(
+      'JWT_ACCESS_EXPIRES_IN',
+      '15m',
+    );
+  }
+
+  get jwtRefreshSecret(): string {
+    return this.configService.get<string>(
+      'JWT_REFRESH_SECRET',
+      'refreshSecretKey',
+    );
+  }
+
+  get jwtRefreshExpiresIn(): JwtExpiresString {
+    return this.configService.get<JwtExpiresString>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
+  }
+
+  get clientUrl(): string {
+    return this.configService.get<string>(
+      'CLIENT_URL',
+      'http://localhost:3001',
+    );
+  }
+
+  get swaggerUser(): string | undefined {
+    return (
+      this.configService.get<string>('SWAGGER_EMAIL') ||
+      this.configService.get<string>('SWAGGER_USER')
+    );
+  }
+
+  get swaggerPassword(): string | undefined {
+    return this.configService.get<string>('SWAGGER_PASSWORD');
+  }
+
+  get swaggerTitle(): string {
+    return this.configService.get<string>(
+      'SWAGGER_TITLE',
+      'API Gestion de Stock',
+    );
+  }
+
+  get swaggerDescription(): string {
+    return this.configService.get<string>(
+      'SWAGGER_DESCRIPTION',
+      'Documentation officielle de API REST de Gestion de Stock',
+    );
+  }
+
+  get swaggerVersion(): string {
+    return this.configService.get<string>('SWAGGER_VERSION', '1.0.0');
   }
 }
