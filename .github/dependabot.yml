@@ -1,40 +1,82 @@
 version: 2
 updates:
-  # --- MISE À JOUR DU SERVEUR (NestJS - Yarn) ---
+  # Configuration des mises à jour des dépendances pour le Backend (server)
   - package-ecosystem: "npm"
     directory: "/server"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
-    target-branch: "develop-server"
-    # Note : l'écosystème "npm" de Dependabot détecte automatiquement le
-    # gestionnaire de paquets via le lockfile présent dans le dossier
-    # (ici yarn.lock). Il n'existe pas d'écosystème "yarn" séparé, et la
-    # clé "registries" ne sert qu'à référencer des registres privés
-    # déclarés dans un bloc "registries:" à la racine du fichier — elle a
-    # été retirée ici car aucun registre n'est défini.
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "backend"
+      - "server"
+    commit-message:
+      prefix: "chore(deps-server)"
+      include: "scope"
+    versioning-strategy: increase
+    groups:
+      nestjs-dependencies:
+        patterns:
+          - "@nestjs/*"
+      prisma-dependencies:
+        patterns:
+          - "@prisma/*"
+          - "prisma"
+      lint-and-format:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "prettier*"
+          - "typescript*"
 
-  # --- MISE À JOUR DU CLIENT (Next.js - npm) ---
+  # Configuration des mises à jour des dépendances pour le Frontend (client)
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
-    target-branch: "develop-client"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "client"
+    commit-message:
+      prefix: "chore(deps-client)"
+      include: "scope"
+    versioning-strategy: increase
+    groups:
+      react-next-dependencies:
+        patterns:
+          - "react*"
+          - "next*"
+      tailwind-styling:
+        patterns:
+          - "tailwindcss*"
+          - "@tailwindcss/*"
+      lint-and-format:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "prettier*"
+          - "typescript*"
 
-  # --- MISE À JOUR DE LA RACINE (scripts globaux - npm) ---
-  # ⚠️ Ce bloc suppose qu'il existe un package.json à la racine du repo.
-  # Si ce n'est pas le cas, supprimez ce bloc : Dependabot l'ignorera
-  # silencieusement sinon, mais il est inutile.
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
-    target-branch: "main"
-
-  # --- MISE À JOUR DES ACTIONS GITHUB ---
+  # Configuration des actions GitHub
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci/cd"
+    commit-message:
+      prefix: "ci(actions)"
+      include: "scope"
