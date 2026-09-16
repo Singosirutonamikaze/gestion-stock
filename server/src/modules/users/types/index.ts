@@ -1,1 +1,1 @@
-export * from './user-with-relations.type';
+export * from './user-with-relations-type';

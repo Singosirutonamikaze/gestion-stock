@@ -76,7 +76,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.error).toBe('Conflict');
   });
@@ -86,7 +86,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.error).toBe('Not Found');
   });
@@ -96,7 +96,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.error).toBe('Database Error');
   });
@@ -106,7 +106,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(typeof body.timestamp).toBe('string');
   });
@@ -116,7 +116,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.path).toBe('/api/products');
   });
@@ -128,7 +128,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.message as string).toContain('email');
     expect(body.message as string).toContain('username');
@@ -139,7 +139,7 @@ describe('PrismaExceptionFilter', () => {
 
     filter.catch(exception, mockHost);
 
-    const body = responseBody;
+    const body = responseBody!;
     expect(body).toBeDefined();
     expect(body.statusCode).toBe(HttpStatus.CONFLICT);
   });
