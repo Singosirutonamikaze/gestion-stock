@@ -4,6 +4,8 @@ import { OrdersService } from '../../services/orders-service';
 import { ForbiddenException } from '@nestjs/common';
 import { OrderStatus, OrderType } from '@prisma/client';
 import { UserRole } from '../../../../shared/enums/user-role-enum';
+import type { JwtPayload } from '../../../auth/types/jwt-payload.type';
+import { CreateOrderDto } from '../../dto';
 
 describe('OrdersController', () => {
   let controller: OrdersController;
@@ -24,6 +26,12 @@ describe('OrdersController', () => {
     items: [],
   };
 
+  const mockUser: JwtPayload = {
+    sub: 'user-1',
+    email: 'sales@test.com',
+    role: UserRole.SALES,
+  };
+
   beforeEach(async () => {
     service = {
       findAll: jest.fn().mockResolvedValue({
@@ -36,7 +44,9 @@ describe('OrdersController', () => {
       findById: jest.fn().mockResolvedValue(mockOrder),
       create: jest.fn().mockResolvedValue(mockOrder),
       update: jest.fn().mockResolvedValue(mockOrder),
-      cancel: jest.fn().mockResolvedValue({ ...mockOrder, status: OrderStatus.CANCELLED }),
+      cancel: jest
+        .fn()
+        .mockResolvedValue({ ...mockOrder, status: OrderStatus.CANCELLED }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -74,28 +84,26 @@ describe('OrdersController', () => {
 
   describe('create', () => {
     it('doit créer une commande si autorisé', async () => {
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.SALE,
         warehouseId: 'wh-1',
         items: [{ productId: 'prod-1', quantity: 2, unitPrice: 100 }],
       };
-      const user = { sub: 'user-1', email: 'sales@test.com', role: UserRole.SALES } as any;
 
-      const result = await controller.create(dto as any, user);
+      const result = await controller.create(dto, mockUser);
       expect(result).toEqual(mockOrder);
       expect(service.create).toHaveBeenCalledWith(dto, 'user-1');
     });
 
     it('doit interdire à un utilisateur SALES de créer un achat (PURCHASE)', async () => {
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.PURCHASE,
         supplierId: 'sup-1',
         warehouseId: 'wh-1',
         items: [{ productId: 'prod-1', quantity: 2, unitPrice: 100 }],
       };
-      const user = { sub: 'user-1', email: 'sales@test.com', role: UserRole.SALES } as any;
 
-      await expect(controller.create(dto as any, user)).rejects.toThrow(
+      await expect(controller.create(dto, mockUser)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -104,9 +112,8 @@ describe('OrdersController', () => {
   describe('update', () => {
     it('doit mettre à jour une commande', async () => {
       const dto = { status: OrderStatus.CONFIRMED };
-      const user = { sub: 'user-1' } as any;
 
-      const result = await controller.update('order-1', dto, user);
+      const result = await controller.update('order-1', dto, mockUser);
       expect(result).toEqual(mockOrder);
       expect(service.update).toHaveBeenCalledWith('order-1', dto, 'user-1');
     });
@@ -114,8 +121,7 @@ describe('OrdersController', () => {
 
   describe('cancel', () => {
     it('doit annuler une commande', async () => {
-      const user = { sub: 'user-1' } as any;
-      const result = await controller.cancel('order-1', user);
+      const result = await controller.cancel('order-1', mockUser);
       expect(result.status).toBe(OrderStatus.CANCELLED);
       expect(service.cancel).toHaveBeenCalledWith('order-1', 'user-1');
     });

@@ -56,7 +56,12 @@ describe('StockController', () => {
 
   describe('findAll', () => {
     it('doit retourner les niveaux de stock', async () => {
-      const query = { productId: 'prod-1', warehouseId: 'wh-1', page: 1, limit: 10 };
+      const query = {
+        productId: 'prod-1',
+        warehouseId: 'wh-1',
+        page: 1,
+        limit: 10,
+      };
       const result = await controller.findAll(query);
 
       expect(result.items).toEqual([mockStock]);

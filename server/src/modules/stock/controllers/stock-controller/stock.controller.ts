@@ -7,10 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { StockService } from '../../services/stock-service';
 import { StockQueryDto } from '../../dto/stock-query-dto';
-import {
-  StockLevelResponseDto,
-  LowStockResponseDto,
-} from '../../dto/stock-level-response-dto';
+import { LowStockResponseDto } from '../../dto/stock-level-response-dto';
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth-guard';
 import { RolesGuard } from '../../../../core/guards/roles-guard';
 
@@ -41,7 +38,8 @@ export class StockController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Liste des produits sous le seuil d’alerte récupérée avec succès',
+    description:
+      'Liste des produits sous le seuil d’alerte récupérée avec succès',
     type: [LowStockResponseDto],
   })
   async getLowStock(): Promise<LowStockResponseDto[]> {

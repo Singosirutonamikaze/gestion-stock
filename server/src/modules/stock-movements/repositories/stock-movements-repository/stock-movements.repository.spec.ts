@@ -34,7 +34,11 @@ describe('StockMovementsRepository', () => {
         count: jest.fn().mockResolvedValue(1),
         findUnique: jest.fn().mockResolvedValue(mockMovement),
       },
-      $transaction: jest.fn().mockImplementation((cb) => cb(prisma)),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: typeof prisma) => Promise<unknown>) =>
+          cb(prisma),
+        ),
     };
 
     const module: TestingModule = await Test.createTestingModule({

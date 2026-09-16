@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../core/database/prisma-service';
-import { Prisma, StockMovement, MovementType } from '@prisma/client';
+import { Prisma, MovementType } from '@prisma/client';
 
 export type StockMovementWithRelations = Prisma.StockMovementGetPayload<{
   include: {
     product: { select: { id: true; sku: true; name: true } };
     warehouse: { select: { id: true; code: true; name: true } };
     relatedWarehouse: { select: { id: true; code: true; name: true } };
-    user: { select: { id: true; email: true; firstName: true; lastName: true } };
+    user: {
+      select: { id: true; email: true; firstName: true; lastName: true };
+    };
   };
 }>;
 

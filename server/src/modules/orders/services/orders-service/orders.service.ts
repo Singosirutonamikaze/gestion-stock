@@ -3,12 +3,18 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../../../core/database/prisma-service';
 import {
   OrdersRepository,
   OrderWithRelations,
 } from '../../repositories/orders-repository';
-import { CreateOrderDto, UpdateOrderDto, OrderQueryDto } from '../../dto';
+import {
+  CreateOrderDto,
+  CreateOrderItemDto,
+  UpdateOrderDto,
+  OrderQueryDto,
+} from '../../dto';
 import { MovementType, OrderStatus, OrderType, Prisma } from '@prisma/client';
 import { InsufficientStockException } from '../../../../shared/exceptions/insufficient-stock-exception';
 
@@ -50,11 +56,8 @@ export class OrdersService {
    */
   private generateOrderNumber(type: OrderType): string {
     const prefix = type === OrderType.PURCHASE ? 'PO' : 'SO';
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.random()
-      .toString(36)
-      .substring(2, 7)
-      .toUpperCase();
+    const dateStr = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    const randomSuffix = randomBytes(3).toString('hex').toUpperCase();
     return `${prefix}-${dateStr}-${randomSuffix}`;
   }
 
@@ -70,6 +73,87 @@ export class OrdersService {
     }
     const allowed = OrdersService.ALLOWED_TRANSITIONS[currentStatus];
     return allowed ? allowed.includes(targetStatus) : false;
+  }
+
+  /**
+   * Retourne l'objet standard de sélection et jointures pour les commandes.
+   */
+  private getOrderIncludeRelations() {
+    return {
+      items: {
+        include: {
+          product: {
+            select: { id: true, sku: true, name: true, unit: true },
+          },
+        },
+      },
+      supplier: {
+        select: { id: true, name: true, email: true, phone: true },
+      },
+      customer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          companyName: true,
+        },
+      },
+      warehouse: {
+        select: { id: true, code: true, name: true },
+      },
+      createdBy: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    };
+  }
+
+  /**
+   * Calcule les sous-totaux, taxes, remises et totaux des articles de commande.
+   */
+  private calculateOrderItems(items: CreateOrderItemDto[]) {
+    let calculatedSubtotal = 0;
+    let calculatedTaxAmount = 0;
+    let calculatedDiscountAmount = 0;
+
+    const itemsData = items.map((item) => {
+      const discount = item.discountRate ?? 0;
+      const tax = item.taxRate ?? 0;
+      const lineSubtotal =
+        item.quantity * item.unitPrice * (1 - discount / 100);
+      const lineTax = lineSubtotal * (tax / 100);
+
+      calculatedSubtotal += lineSubtotal;
+      calculatedTaxAmount += lineTax;
+      if (discount > 0) {
+        calculatedDiscountAmount +=
+          item.quantity * item.unitPrice * (discount / 100);
+      }
+
+      return {
+        productId: item.productId,
+        variantId: item.variantId || null,
+        quantity: item.quantity,
+        unitPrice: new Prisma.Decimal(item.unitPrice),
+        discountRate: new Prisma.Decimal(discount),
+        taxRate: new Prisma.Decimal(tax),
+        subtotal: new Prisma.Decimal(lineSubtotal),
+      };
+    });
+
+    const totalAmount = calculatedSubtotal + calculatedTaxAmount;
+
+    return {
+      itemsData,
+      subtotal: calculatedSubtotal,
+      taxAmount: calculatedTaxAmount,
+      discountAmount: calculatedDiscountAmount,
+      totalAmount,
+    };
   }
 
   /**
@@ -105,13 +189,11 @@ export class OrdersService {
   }
 
   /**
-   * Crée une nouvelle commande avec calcul automatique des montants.
+   * Valide les entités associées (entrepôt, fournisseur, client, produits) avant création.
    */
-  async create(
+  private async validateOrderCreationRelations(
     dto: CreateOrderDto,
-    userId: string,
-  ): Promise<OrderWithRelations> {
-    // 1. Validation de l'entrepôt
+  ): Promise<void> {
     const warehouse = await this.prisma.warehouse.findUnique({
       where: { id: dto.warehouseId },
     });
@@ -121,7 +203,6 @@ export class OrdersService {
       );
     }
 
-    // 2. Validation du fournisseur (si commande d'achat)
     if (dto.type === OrderType.PURCHASE) {
       if (!dto.supplierId) {
         throw new BadRequestException(
@@ -138,7 +219,6 @@ export class OrdersService {
       }
     }
 
-    // 3. Validation du client (si client enregistré fourni)
     if (dto.customerId) {
       const customer = await this.prisma.customer.findUnique({
         where: { id: dto.customerId },
@@ -150,7 +230,6 @@ export class OrdersService {
       }
     }
 
-    // 4. Validation des produits et calculs des lignes
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException(
         'La commande doit comporter au moins un article',
@@ -169,43 +248,23 @@ export class OrdersService {
         `Produit(s) introuvable(s) : ${missing.join(', ')}`,
       );
     }
+  }
 
-    // 5. Calculs des sous-totaux et totalAmount
-    let calculatedSubtotal = 0;
-    let calculatedTaxAmount = 0;
-    let calculatedDiscountAmount = 0;
+  /**
+   * Crée une nouvelle commande avec calcul automatique des montants.
+   */
+  async create(
+    dto: CreateOrderDto,
+    userId: string,
+  ): Promise<OrderWithRelations> {
+    await this.validateOrderCreationRelations(dto);
 
-    const itemsData = dto.items.map((item) => {
-      const discount = item.discountRate ?? 0;
-      const tax = item.taxRate ?? 0;
-      const lineSubtotal =
-        item.quantity * item.unitPrice * (1 - discount / 100);
-      const lineTax = lineSubtotal * (tax / 100);
-
-      calculatedSubtotal += lineSubtotal;
-      calculatedTaxAmount += lineTax;
-      if (discount > 0) {
-        calculatedDiscountAmount +=
-          item.quantity * item.unitPrice * (discount / 100);
-      }
-
-      return {
-        productId: item.productId,
-        variantId: item.variantId || null,
-        quantity: item.quantity,
-        unitPrice: new Prisma.Decimal(item.unitPrice),
-        discountRate: new Prisma.Decimal(discount),
-        taxRate: new Prisma.Decimal(tax),
-        subtotal: new Prisma.Decimal(lineSubtotal),
-      };
-    });
-
-    const totalAmount = calculatedSubtotal + calculatedTaxAmount;
+    const { itemsData, subtotal, taxAmount, discountAmount, totalAmount } =
+      this.calculateOrderItems(dto.items);
     const orderNumber = this.generateOrderNumber(dto.type);
 
-    // 6. Enregistrement transactionnel de la commande et des articles
     return await this.prisma.$transaction(async (tx) => {
-      const createdOrder = await tx.order.create({
+      return await tx.order.create({
         data: {
           orderNumber,
           type: dto.type,
@@ -215,9 +274,9 @@ export class OrdersService {
           customerName: dto.customerName || null,
           warehouseId: dto.warehouseId,
           shippingAddressId: dto.shippingAddressId || null,
-          subtotal: new Prisma.Decimal(calculatedSubtotal),
-          taxAmount: new Prisma.Decimal(calculatedTaxAmount),
-          discountAmount: new Prisma.Decimal(calculatedDiscountAmount),
+          subtotal: new Prisma.Decimal(subtotal),
+          taxAmount: new Prisma.Decimal(taxAmount),
+          discountAmount: new Prisma.Decimal(discountAmount),
           shippingCost: new Prisma.Decimal(0),
           totalAmount: new Prisma.Decimal(totalAmount),
           expectedDeliveryDate: dto.expectedDeliveryDate
@@ -229,80 +288,45 @@ export class OrdersService {
             create: itemsData,
           },
         },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  sku: true,
-                  name: true,
-                  unit: true,
-                },
-              },
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              companyName: true,
-            },
-          },
-          warehouse: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
+        include: this.getOrderIncludeRelations(),
       });
-
-      return createdOrder;
     });
   }
 
   /**
-   * Met à jour une commande, gère les transitions de statut et applique les mouvements de stock automatiques.
+   * Met à jour les lignes d'articles lorsque la commande est en statut DRAFT.
    */
-  async update(
-    id: string,
-    dto: UpdateOrderDto,
-    userId: string,
+  private async updateDraftItems(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    items: CreateOrderItemDto[],
+    updateData: Prisma.OrderUpdateInput,
   ): Promise<OrderWithRelations> {
-    const order = await this.findById(id);
+    await tx.orderItem.deleteMany({ where: { orderId } });
 
-    // 1. Gestion des transitions de statut
-    if (dto.status && dto.status !== order.status) {
-      if (!this.isValidStatusTransition(order.status, dto.status)) {
-        throw new BadRequestException(
-          `Transition de statut non autorisée de ${order.status} vers ${dto.status}`,
-        );
-      }
+    const { itemsData, subtotal, taxAmount, discountAmount, totalAmount } =
+      this.calculateOrderItems(items);
 
-      // Exécution de la transition avec gestion des mouvements de stock
-      return await this.handleStatusTransition(order, dto.status, userId, dto);
-    }
+    return await tx.order.update({
+      where: { id: orderId },
+      data: {
+        ...updateData,
+        subtotal: new Prisma.Decimal(subtotal),
+        taxAmount: new Prisma.Decimal(taxAmount),
+        discountAmount: new Prisma.Decimal(discountAmount),
+        totalAmount: new Prisma.Decimal(totalAmount),
+        items: {
+          create: itemsData,
+        },
+      },
+      include: this.getOrderIncludeRelations(),
+    });
+  }
 
-    // 2. Mise à jour standard sans changement de statut
+  /**
+   * Construit le payload de mise à jour scalaire.
+   */
+  private buildScalarUpdateData(dto: UpdateOrderDto): Prisma.OrderUpdateInput {
     const updateData: Prisma.OrderUpdateInput = {};
 
     if (dto.paymentStatus) updateData.paymentStatus = dto.paymentStatus;
@@ -321,132 +345,173 @@ export class OrdersService {
         : null;
     }
 
-    // Si modification des articles en statut DRAFT
+    return updateData;
+  }
+
+  /**
+   * Met à jour une commande, gère les transitions de statut et applique les mouvements de stock automatiques.
+   */
+  async update(
+    id: string,
+    dto: UpdateOrderDto,
+    userId: string,
+  ): Promise<OrderWithRelations> {
+    const order = await this.findById(id);
+
+    // 1. Transition de statut
+    if (dto.status && dto.status !== order.status) {
+      if (!this.isValidStatusTransition(order.status, dto.status)) {
+        throw new BadRequestException(
+          `Transition de statut non autorisée de ${order.status} vers ${dto.status}`,
+        );
+      }
+      return await this.handleStatusTransition(order, dto.status, userId, dto);
+    }
+
+    // 2. Mise à jour standard
+    const updateData = this.buildScalarUpdateData(dto);
+
     if (dto.items && dto.items.length > 0) {
       if (order.status !== OrderStatus.DRAFT) {
         throw new BadRequestException(
           'Les articles d’une commande ne peuvent être modifiés que lorsque la commande est en statut DRAFT',
         );
       }
-
       return await this.prisma.$transaction(async (tx) => {
-        // Supprimer les anciens articles
-        await tx.orderItem.deleteMany({ where: { orderId: id } });
-
-        // Calculer les nouveaux totaux
-        let calculatedSubtotal = 0;
-        let calculatedTaxAmount = 0;
-        let calculatedDiscountAmount = 0;
-
-        const itemsData = dto.items!.map((item) => {
-          const discount = item.discountRate ?? 0;
-          const tax = item.taxRate ?? 0;
-          const lineSubtotal =
-            item.quantity * item.unitPrice * (1 - discount / 100);
-          const lineTax = lineSubtotal * (tax / 100);
-
-          calculatedSubtotal += lineSubtotal;
-          calculatedTaxAmount += lineTax;
-          if (discount > 0) {
-            calculatedDiscountAmount +=
-              item.quantity * item.unitPrice * (discount / 100);
-          }
-
-          return {
-            productId: item.productId,
-            variantId: item.variantId || null,
-            quantity: item.quantity,
-            unitPrice: new Prisma.Decimal(item.unitPrice),
-            discountRate: new Prisma.Decimal(discount),
-            taxRate: new Prisma.Decimal(tax),
-            subtotal: new Prisma.Decimal(lineSubtotal),
-          };
-        });
-
-        const totalAmount = calculatedSubtotal + calculatedTaxAmount;
-
-        return await tx.order.update({
-          where: { id },
-          data: {
-            ...updateData,
-            subtotal: new Prisma.Decimal(calculatedSubtotal),
-            taxAmount: new Prisma.Decimal(calculatedTaxAmount),
-            discountAmount: new Prisma.Decimal(calculatedDiscountAmount),
-            totalAmount: new Prisma.Decimal(totalAmount),
-            items: {
-              create: itemsData,
-            },
-          },
-          include: {
-            items: {
-              include: {
-                product: {
-                  select: { id: true, sku: true, name: true, unit: true },
-                },
-              },
-            },
-            supplier: {
-              select: { id: true, name: true, email: true, phone: true },
-            },
-            customer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                companyName: true,
-              },
-            },
-            warehouse: {
-              select: { id: true, code: true, name: true },
-            },
-            createdBy: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        });
+        return await this.updateDraftItems(tx, id, dto.items!, updateData);
       });
     }
 
     return await this.prisma.order.update({
       where: { id },
       data: updateData,
-      include: {
-        items: {
-          include: {
-            product: {
-              select: { id: true, sku: true, name: true, unit: true },
-            },
-          },
-        },
-        supplier: {
-          select: { id: true, name: true, email: true, phone: true },
-        },
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-        warehouse: {
-          select: { id: true, code: true, name: true },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: this.getOrderIncludeRelations(),
     });
+  }
+
+  /**
+   * Traite la réception d'une commande d'achat : création des mouvements IN et incrémentation du stock.
+   */
+  private async processPurchaseReceipt(
+    tx: Prisma.TransactionClient,
+    order: OrderWithRelations,
+    userId: string,
+  ): Promise<void> {
+    for (const item of order.items) {
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          warehouseId: order.warehouseId,
+          type: MovementType.IN,
+          quantity: item.quantity,
+          reference: order.orderNumber,
+          reason: `Réception commande achat #${order.orderNumber}`,
+          userId,
+        },
+      });
+
+      const stock = await tx.stock.findFirst({
+        where: {
+          productId: item.productId,
+          warehouseId: order.warehouseId,
+          locationId: null,
+        },
+      });
+
+      const currentQty = stock?.quantity ?? 0;
+      const currentReserved = stock?.reservedQuantity ?? 0;
+      const newQty = currentQty + item.quantity;
+      const newAvailable = newQty - currentReserved;
+
+      if (stock) {
+        await tx.stock.update({
+          where: { id: stock.id },
+          data: {
+            quantity: newQty,
+            availableQuantity: newAvailable,
+          },
+        });
+      } else {
+        await tx.stock.create({
+          data: {
+            productId: item.productId,
+            warehouseId: order.warehouseId,
+            locationId: null,
+            quantity: newQty,
+            reservedQuantity: currentReserved,
+            availableQuantity: newAvailable,
+          },
+        });
+      }
+    }
+  }
+
+  /**
+   * Traite l'expédition d'une commande de vente : vérification des disponibilités, création des mouvements OUT et décrémentation.
+   */
+  private async processSaleShipment(
+    tx: Prisma.TransactionClient,
+    order: OrderWithRelations,
+    userId: string,
+  ): Promise<void> {
+    // Vérification préliminaire du stock disponible
+    for (const item of order.items) {
+      const stock = await tx.stock.findFirst({
+        where: {
+          productId: item.productId,
+          warehouseId: order.warehouseId,
+          locationId: null,
+        },
+      });
+
+      const available = stock ? stock.availableQuantity : 0;
+      if (available < item.quantity) {
+        throw new InsufficientStockException(
+          item.productId,
+          order.warehouseId,
+          available,
+          item.quantity,
+        );
+      }
+    }
+
+    // Création des mouvements OUT et décrémentation
+    for (const item of order.items) {
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          warehouseId: order.warehouseId,
+          type: MovementType.OUT,
+          quantity: item.quantity,
+          reference: order.orderNumber,
+          reason: `Expédition commande vente #${order.orderNumber}`,
+          userId,
+        },
+      });
+
+      const stock = await tx.stock.findFirst({
+        where: {
+          productId: item.productId,
+          warehouseId: order.warehouseId,
+          locationId: null,
+        },
+      });
+
+      const currentQty = stock?.quantity ?? 0;
+      const currentReserved = stock?.reservedQuantity ?? 0;
+      const newQty = currentQty - item.quantity;
+      const newAvailable = newQty - currentReserved;
+
+      if (stock) {
+        await tx.stock.update({
+          where: { id: stock.id },
+          data: {
+            quantity: newQty,
+            availableQuantity: newAvailable,
+          },
+        });
+      }
+    }
   }
 
   /**
@@ -467,166 +532,24 @@ export class OrdersService {
       if (dto.paymentMethod) updateData.paymentMethod = dto.paymentMethod;
       if (dto.notes !== undefined) updateData.notes = dto.notes;
 
-      // 1. Commande d'achat passant à RECEIVED : Génération des mouvements IN
       if (
         order.type === OrderType.PURCHASE &&
         targetStatus === OrderStatus.RECEIVED
       ) {
         updateData.receivedAt = new Date();
-
-        for (const item of order.items) {
-          // Création du mouvement de stock IN
-          await tx.stockMovement.create({
-            data: {
-              productId: item.productId,
-              warehouseId: order.warehouseId,
-              type: MovementType.IN,
-              quantity: item.quantity,
-              reference: order.orderNumber,
-              reason: `Réception commande achat #${order.orderNumber}`,
-              userId,
-            },
-          });
-
-          // Mise à jour de la table de stock
-          const stock = await tx.stock.findFirst({
-            where: {
-              productId: item.productId,
-              warehouseId: order.warehouseId,
-              locationId: null,
-            },
-          });
-
-          const currentQty = stock?.quantity ?? 0;
-          const currentReserved = stock?.reservedQuantity ?? 0;
-          const newQty = currentQty + item.quantity;
-          const newAvailable = newQty - currentReserved;
-
-          if (stock) {
-            await tx.stock.update({
-              where: { id: stock.id },
-              data: {
-                quantity: newQty,
-                availableQuantity: newAvailable,
-              },
-            });
-          } else {
-            await tx.stock.create({
-              data: {
-                productId: item.productId,
-                warehouseId: order.warehouseId,
-                locationId: null,
-                quantity: newQty,
-                reservedQuantity: currentReserved,
-                availableQuantity: newAvailable,
-              },
-            });
-          }
-        }
-      }
-
-      // 2. Commande de vente passant à SHIPPED : Vérification du stock dispo et génération des mouvements OUT
-      if (
+        await this.processPurchaseReceipt(tx, order, userId);
+      } else if (
         order.type === OrderType.SALE &&
         targetStatus === OrderStatus.SHIPPED
       ) {
         updateData.shippedAt = new Date();
-
-        // 2.1 Vérification préliminaire du stock disponible pour chaque ligne
-        for (const item of order.items) {
-          const stock = await tx.stock.findFirst({
-            where: {
-              productId: item.productId,
-              warehouseId: order.warehouseId,
-              locationId: null,
-            },
-          });
-
-          const available = stock ? stock.availableQuantity : 0;
-          if (available < item.quantity) {
-            throw new InsufficientStockException(
-              item.productId,
-              order.warehouseId,
-              available,
-              item.quantity,
-            );
-          }
-        }
-
-        // 2.2 Génération des mouvements OUT et décrémentation du stock
-        for (const item of order.items) {
-          await tx.stockMovement.create({
-            data: {
-              productId: item.productId,
-              warehouseId: order.warehouseId,
-              type: MovementType.OUT,
-              quantity: item.quantity,
-              reference: order.orderNumber,
-              reason: `Expédition commande vente #${order.orderNumber}`,
-              userId,
-            },
-          });
-
-          const stock = await tx.stock.findFirst({
-            where: {
-              productId: item.productId,
-              warehouseId: order.warehouseId,
-              locationId: null,
-            },
-          });
-
-          const currentQty = stock?.quantity ?? 0;
-          const currentReserved = stock?.reservedQuantity ?? 0;
-          const newQty = currentQty - item.quantity;
-          const newAvailable = newQty - currentReserved;
-
-          if (stock) {
-            await tx.stock.update({
-              where: { id: stock.id },
-              data: {
-                quantity: newQty,
-                availableQuantity: newAvailable,
-              },
-            });
-          }
-        }
+        await this.processSaleShipment(tx, order, userId);
       }
 
-      // 3. Mise à jour de la commande
       return await tx.order.update({
         where: { id: order.id },
         data: updateData,
-        include: {
-          items: {
-            include: {
-              product: {
-                select: { id: true, sku: true, name: true, unit: true },
-              },
-            },
-          },
-          supplier: {
-            select: { id: true, name: true, email: true, phone: true },
-          },
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              companyName: true,
-            },
-          },
-          warehouse: {
-            select: { id: true, code: true, name: true },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
+        include: this.getOrderIncludeRelations(),
       });
     });
   }

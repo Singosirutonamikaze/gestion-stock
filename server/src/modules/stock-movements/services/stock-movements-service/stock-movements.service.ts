@@ -61,7 +61,9 @@ export class StockMovementsService {
   async findById(id: string): Promise<StockMovementWithRelations> {
     const movement = await this.stockMovementsRepository.findById(id);
     if (!movement) {
-      throw new NotFoundException(`Mouvement de stock avec l'ID ${id} introuvable`);
+      throw new NotFoundException(
+        `Mouvement de stock avec l'ID ${id} introuvable`,
+      );
     }
     return movement;
   }

@@ -25,7 +25,7 @@ import { Roles } from '../../../../shared/decorators/roles-decorator';
 import { CurrentUser } from '../../../../shared/decorators/current-user-decorator';
 import { UserRole } from '../../../../shared/enums/user-role-enum';
 import { MovementType } from '@prisma/client';
-import { JwtPayload } from '../../../auth/types/jwt-payload.type';
+import type { JwtPayload } from '../../../auth/types/jwt-payload.type';
 
 /**
  * Contrôleur REST pour la gestion des mouvements de stock.
@@ -39,9 +39,7 @@ import { JwtPayload } from '../../../auth/types/jwt-payload.type';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('stock-movements')
 export class StockMovementsController {
-  constructor(
-    private readonly stockMovementsService: StockMovementsService,
-  ) {}
+  constructor(private readonly stockMovementsService: StockMovementsService) {}
 
   /**
    * Liste les mouvements de stock avec filtres optionnels et pagination.
@@ -75,15 +73,15 @@ export class StockMovementsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const pageNum = page ? Number.parseInt(page, 10) : 1;
+    const limitNum = limit ? Number.parseInt(limit, 10) : 20;
 
     return await this.stockMovementsService.findAll({
       productId,
       warehouseId,
       type,
-      page: isNaN(pageNum) ? 1 : pageNum,
-      limit: isNaN(limitNum) ? 20 : limitNum,
+      page: Number.isNaN(pageNum) ? 1 : pageNum,
+      limit: Number.isNaN(limitNum) ? 20 : limitNum,
     });
   }
 
@@ -96,7 +94,8 @@ export class StockMovementsController {
   @Get(':id')
   @ApiOperation({
     summary: 'Consulter un mouvement de stock',
-    description: 'Retourne les informations détaillées d’un mouvement spécifique.',
+    description:
+      'Retourne les informations détaillées d’un mouvement spécifique.',
   })
   @ApiParam({ name: 'id', description: 'UUID du mouvement', type: String })
   @ApiResponse({

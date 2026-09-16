@@ -5,9 +5,7 @@ import { LoginDto } from '../../../src/modules/auth/dto/login.dto';
 
 describe('AuthController performance', () => {
   it('exécute 1000 appels login sans dépasser 250 ms', async () => {
-    const login = jest.fn<AuthService['login']>().mockResolvedValue(
-      undefined as never,
-    );
+    const login = jest.fn<AuthService['login']>().mockResolvedValue(undefined);
     const controller = new AuthController({ login } as AuthService);
     const credentials: LoginDto = {
       email: 'test@example.com',

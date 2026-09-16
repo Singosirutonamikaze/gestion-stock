@@ -32,7 +32,7 @@ import { Roles } from '../../../../shared/decorators/roles-decorator';
 import { CurrentUser } from '../../../../shared/decorators/current-user-decorator';
 import { UserRole } from '../../../../shared/enums/user-role-enum';
 import { OrderType } from '@prisma/client';
-import { JwtPayload } from '../../../auth/types/jwt-payload.type';
+import type { JwtPayload } from '../../../auth/types/jwt-payload.type';
 
 /**
  * Contrôleur REST pour la gestion des commandes d'achat et de vente.

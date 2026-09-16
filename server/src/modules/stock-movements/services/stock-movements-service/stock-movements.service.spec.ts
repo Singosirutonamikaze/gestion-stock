@@ -71,15 +71,19 @@ describe('StockMovementsService', () => {
         findUnique: jest.fn().mockResolvedValue(mockProduct),
       },
       warehouse: {
-        findUnique: jest.fn().mockImplementation(({ where }) => {
-          if (where.id === 'wh-1') return Promise.resolve(mockWarehouseSource);
-          if (where.id === 'wh-2') return Promise.resolve(mockWarehouseDest);
-          return Promise.resolve(null);
-        }),
+        findUnique: jest
+          .fn()
+          .mockImplementation(({ where }: { where: { id: string } }) => {
+            if (where.id === 'wh-1') return Promise.resolve(mockWarehouseSource);
+            if (where.id === 'wh-2') return Promise.resolve(mockWarehouseDest);
+            return Promise.resolve(null);
+          }),
       },
       $transaction: jest
         .fn()
-        .mockImplementation((callback) => callback(txMock)),
+        .mockImplementation((callback: (tx: typeof txMock) => Promise<unknown>) =>
+          callback(txMock),
+        ),
     };
 
     repository = {

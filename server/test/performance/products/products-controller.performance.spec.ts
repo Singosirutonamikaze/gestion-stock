@@ -5,15 +5,13 @@ import { ProductQueryDto } from '../../../src/modules/products/dto/product-query
 
 describe('ProductsController performance', () => {
   it('exécute 1000 appels findAll sans dépasser 250 ms', async () => {
-    const findAll = jest
-      .fn()
-      .mockResolvedValue({
-        items: [],
-        total: 0,
-        page: 1,
-        limit: 20,
-        totalPages: 0,
-      }) as jest.MockedFunction<ProductsService['findAll']>;
+    const findAll = jest.fn().mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+    }) as jest.MockedFunction<ProductsService['findAll']>;
     const controller = new ProductsController({ findAll } as ProductsService);
     const query: ProductQueryDto = { page: 1, limit: 20 };
     const start = performance.now();

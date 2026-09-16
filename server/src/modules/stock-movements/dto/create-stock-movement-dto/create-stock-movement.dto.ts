@@ -83,7 +83,8 @@ export class CreateStockMovementDto {
   })
   @ValidateIf((o: CreateStockMovementDto) => o.type === MovementType.TRANSFER)
   @IsNotEmpty({
-    message: 'L’entrepôt destination (relatedWarehouseId) est obligatoire pour un transfert',
+    message:
+      'L’entrepôt destination (relatedWarehouseId) est obligatoire pour un transfert',
   })
   @IsUUID('4', {
     message: 'Le relatedWarehouseId doit être un UUID valide',

@@ -5,6 +5,7 @@ import { OrdersRepository } from '../../repositories/orders-repository';
 import { PrismaService } from '../../../../core/database/prisma-service';
 import { OrderStatus, OrderType, MovementType, Prisma } from '@prisma/client';
 import { InsufficientStockException } from '../../../../shared/exceptions/insufficient-stock-exception';
+import { CreateOrderDto } from '../../dto';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -102,17 +103,26 @@ describe('OrdersService', () => {
     supplier: mockSupplier,
     customer: null,
     warehouse: mockWarehouse,
-    createdBy: { id: 'user-1', email: 'admin@test.com', firstName: 'Admin', lastName: 'User' },
+    createdBy: {
+      id: 'user-1',
+      email: 'admin@test.com',
+      firstName: 'Admin',
+      lastName: 'User',
+    },
   };
 
   beforeEach(async () => {
     txMock = {
       order: {
         create: jest.fn().mockResolvedValue(mockOrder),
-        update: jest.fn().mockImplementation(({ data }) => ({
-          ...mockOrder,
-          ...data,
-        })),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }: { data: Prisma.OrderUpdateInput }) =>
+            Promise.resolve({
+              ...mockOrder,
+              ...data,
+            }),
+          ),
       },
       orderItem: {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -144,7 +154,11 @@ describe('OrdersService', () => {
       order: {
         update: jest.fn().mockResolvedValue(mockOrder),
       },
-      $transaction: jest.fn().mockImplementation((cb) => cb(txMock)),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: typeof txMock) => Promise<unknown>) =>
+          cb(txMock),
+        ),
     };
 
     repository = {
@@ -187,13 +201,15 @@ describe('OrdersService', () => {
 
     it('doit lever NotFoundException si la commande n’existe pas', async () => {
       repository.findById.mockResolvedValue(null);
-      await expect(service.findById('unknown-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('unknown-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('create', () => {
     it('doit créer une commande d’achat valide et calculer le total', async () => {
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.PURCHASE,
         supplierId: 'sup-1',
         warehouseId: 'wh-1',
@@ -211,7 +227,10 @@ describe('OrdersService', () => {
       const result = await service.create(dto, 'user-1');
       expect(result).toBeDefined();
       expect(txMock.order.create).toHaveBeenCalled();
-      const createCallData = txMock.order.create.mock.calls[0][0].data;
+      const createCall = txMock.order.create.mock.calls[0] as [
+        { data: Prisma.OrderCreateInput },
+      ];
+      const createCallData = createCall[0].data;
       expect(createCallData.status).toBe(OrderStatus.DRAFT);
       expect(createCallData.orderNumber).toContain('PO-');
       expect(Number(createCallData.subtotal)).toBe(5000);
@@ -223,41 +242,47 @@ describe('OrdersService', () => {
         type: OrderType.PURCHASE,
         warehouseId: 'wh-1',
         items: [{ productId: 'prod-1', quantity: 2, unitPrice: 100 }],
-      };
+      } as unknown as CreateOrderDto;
 
-      await expect(service.create(dto as any, 'user-1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('doit lever NotFoundException si le fournisseur n’existe pas', async () => {
       prisma.supplier.findUnique.mockResolvedValue(null);
 
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.PURCHASE,
         supplierId: 'unknown-sup',
         warehouseId: 'wh-1',
         items: [{ productId: 'prod-1', quantity: 2, unitPrice: 100 }],
       };
 
-      await expect(service.create(dto, 'user-1')).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('doit lever NotFoundException si l’entrepôt n’existe pas', async () => {
       prisma.warehouse.findUnique.mockResolvedValue(null);
 
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.PURCHASE,
         supplierId: 'sup-1',
         warehouseId: 'unknown-wh',
         items: [{ productId: 'prod-1', quantity: 2, unitPrice: 100 }],
       };
 
-      await expect(service.create(dto, 'user-1')).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('doit lever NotFoundException si un des produits commandés n’existe pas', async () => {
       prisma.product.findMany.mockResolvedValue([mockProduct1]); // prod-2 manquant
 
-      const dto = {
+      const dto: CreateOrderDto = {
         type: OrderType.SALE,
         warehouseId: 'wh-1',
         items: [
@@ -266,18 +291,28 @@ describe('OrdersService', () => {
         ],
       };
 
-      await expect(service.create(dto, 'user-1')).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('update & transitions de statut', () => {
     it('doit autoriser DRAFT -> CONFIRMED', async () => {
-      const result = await service.update('order-1', { status: OrderStatus.CONFIRMED }, 'user-1');
+      const result = await service.update(
+        'order-1',
+        { status: OrderStatus.CONFIRMED },
+        'user-1',
+      );
       expect(result.status).toBe(OrderStatus.CONFIRMED);
     });
 
     it('doit autoriser DRAFT -> CANCELLED', async () => {
-      const result = await service.update('order-1', { status: OrderStatus.CANCELLED }, 'user-1');
+      const result = await service.update(
+        'order-1',
+        { status: OrderStatus.CANCELLED },
+        'user-1',
+      );
       expect(result.status).toBe(OrderStatus.CANCELLED);
     });
 
@@ -302,7 +337,11 @@ describe('OrdersService', () => {
         availableQuantity: 10,
       });
 
-      await service.update('order-1', { status: OrderStatus.RECEIVED }, 'user-1');
+      await service.update(
+        'order-1',
+        { status: OrderStatus.RECEIVED },
+        'user-1',
+      );
 
       expect(txMock.stockMovement.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -337,7 +376,11 @@ describe('OrdersService', () => {
         availableQuantity: 20,
       });
 
-      await service.update('order-1', { status: OrderStatus.SHIPPED }, 'user-1');
+      await service.update(
+        'order-1',
+        { status: OrderStatus.SHIPPED },
+        'user-1',
+      );
 
       expect(txMock.stockMovement.create).toHaveBeenCalledWith({
         data: expect.objectContaining({

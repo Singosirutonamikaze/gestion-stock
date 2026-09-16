@@ -4,10 +4,12 @@ import { WarehousesService } from '../../../src/modules/warehouses/services/ware
 
 describe('WarehousesController performance', () => {
   it('exécute 1000 appels findAll sans dépasser 250 ms', async () => {
-    const findAll = jest
-      .fn()
-      .mockResolvedValue([]) as jest.MockedFunction<WarehousesService['findAll']>;
-    const controller = new WarehousesController({ findAll } as WarehousesService);
+    const findAll = jest.fn().mockResolvedValue([]) as jest.MockedFunction<
+      WarehousesService['findAll']
+    >;
+    const controller = new WarehousesController({
+      findAll,
+    } as WarehousesService);
     const start = performance.now();
 
     for (let index = 0; index < 1000; index += 1) {

@@ -59,7 +59,13 @@ describe('StockMovementsController', () => {
 
   describe('findAll', () => {
     it('doit retourner la liste paginée des mouvements', async () => {
-      const result = await controller.findAll('prod-1', 'wh-1', MovementType.IN, '1', '20');
+      const result = await controller.findAll(
+        'prod-1',
+        'wh-1',
+        MovementType.IN,
+        '1',
+        '20',
+      );
       expect(result.items).toEqual([mockMovement]);
       expect(service.findAll).toHaveBeenCalledWith({
         productId: 'prod-1',
