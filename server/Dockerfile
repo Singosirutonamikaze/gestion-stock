@@ -1,7 +1,7 @@
 # ==========================================
-# 1. Base image
+# 1. Base image (Node.js 24 Alpine)
 # ==========================================
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 WORKDIR /usr/src/app
 
 # ==========================================
@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 FROM base AS dependencies
 COPY package.json yarn.lock ./
 COPY prisma ./prisma/
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --ignore-engines
 
 # ==========================================
 # 3. Build stage
@@ -35,5 +35,5 @@ USER node
 
 EXPOSE 3000
 
-# Exécute automatiquement les migrations Prisma sur la base de données au démarrage puis lance le serveur
+# Exécute automatiquement les migrations Prisma sur la base PostgreSQL au démarrage puis démarre l'API
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
