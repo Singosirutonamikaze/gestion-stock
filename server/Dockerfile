@@ -30,6 +30,7 @@ COPY package.json yarn.lock ./
 COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
 COPY --from=build --chown=node:node /usr/src/app/dist ./dist
 COPY --from=build --chown=node:node /usr/src/app/prisma ./prisma
+COPY --from=build --chown=node:node /usr/src/app/prisma.config.ts ./prisma.config.ts
 
 USER node
 
