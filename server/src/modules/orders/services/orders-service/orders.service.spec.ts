@@ -345,7 +345,7 @@ describe('OrdersService', () => {
 
       expect(txMock.stockMovement.create).toHaveBeenCalled();
       const createInCall = txMock.stockMovement.create.mock.calls[0] as [
-        { data: Prisma.StockMovementCreateInput },
+        { data: Prisma.StockMovementUncheckedCreateInput },
       ];
       expect(createInCall[0].data.productId).toBe('prod-1');
       expect(createInCall[0].data.warehouseId).toBe('wh-1');
@@ -384,7 +384,7 @@ describe('OrdersService', () => {
 
       expect(txMock.stockMovement.create).toHaveBeenCalled();
       const createOutCall = txMock.stockMovement.create.mock.calls[0] as [
-        { data: Prisma.StockMovementCreateInput },
+        { data: Prisma.StockMovementUncheckedCreateInput },
       ];
       expect(createOutCall[0].data.productId).toBe('prod-1');
       expect(createOutCall[0].data.warehouseId).toBe('wh-1');
