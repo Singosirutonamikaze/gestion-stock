@@ -8,18 +8,17 @@ WORKDIR /usr/src/app
 # 2. Dependencies stage
 # ==========================================
 FROM base AS dependencies
-COPY package*.json ./
+COPY package.json yarn.lock ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
 # ==========================================
 # 3. Build stage
 # ==========================================
 FROM dependencies AS build
 COPY . .
-RUN npx prisma generate
-RUN npm run build
-RUN npm prune --production
+RUN yarn prisma generate
+RUN yarn build
 
 # ==========================================
 # 4. Production stage (Non-root user node)
@@ -27,7 +26,7 @@ RUN npm prune --production
 FROM base AS production
 ENV NODE_ENV=production
 
-COPY package*.json ./
+COPY package.json yarn.lock ./
 COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
 COPY --from=build --chown=node:node /usr/src/app/dist ./dist
 COPY --from=build --chown=node:node /usr/src/app/prisma ./prisma
@@ -36,4 +35,5 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Exécute automatiquement les migrations Prisma sur la base de données au démarrage puis lance le serveur
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
