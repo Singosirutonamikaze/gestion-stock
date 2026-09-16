@@ -132,18 +132,26 @@ export class LoggerService implements NestLoggerService {
 
   constructor() {
     const consoleFormat = LoggerService.buildConsoleFormat();
-    const fileFormat = LoggerService.buildFileFormat();
+    const transports: winston.transport[] = [
+      new winston.transports.Console({
+        format: consoleFormat,
+        silent: process.env.NODE_ENV === 'test',
+      }),
+    ];
+
+    try {
+      const fileFormat = LoggerService.buildFileFormat();
+      transports.push(
+        LoggerService.buildDailyRotateTransport(fileFormat),
+        LoggerService.buildErrorRotateTransport(fileFormat),
+      );
+    } catch {
+      // Si la création des fichiers de rotation échoue, la console prend le relais
+    }
 
     this.logger = winston.createLogger({
       level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-      transports: [
-        new winston.transports.Console({
-          format: consoleFormat,
-          silent: process.env.NODE_ENV === 'test',
-        }),
-        LoggerService.buildDailyRotateTransport(fileFormat),
-        LoggerService.buildErrorRotateTransport(fileFormat),
-      ],
+      transports,
     });
   }
 

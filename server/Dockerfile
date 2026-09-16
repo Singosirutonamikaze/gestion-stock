@@ -26,6 +26,9 @@ RUN yarn build
 FROM base AS production
 ENV NODE_ENV=production
 
+# Préparer le dossier logs avec les permissions pour l'utilisateur node
+RUN mkdir -p /usr/src/app/logs /usr/src/app/logs/.audit && chown -R node:node /usr/src/app
+
 COPY package.json yarn.lock ./
 COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
 COPY --from=build --chown=node:node /usr/src/app/dist ./dist
