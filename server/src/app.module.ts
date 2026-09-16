@@ -13,6 +13,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { ProductsModule } from './modules/products/products.module';
+import { StockModule } from './modules/stock/stock.module';
+import { StockMovementsModule } from './modules/stock-movements/stock-movements.module';
 
 /**
  * Module racine de l'application assemblant l'ensemble des modules core et fonctionnels.
@@ -33,6 +35,8 @@ import { ProductsModule } from './modules/products/products.module';
     SuppliersModule,
     WarehousesModule,
     ProductsModule,
+    StockModule,
+    StockMovementsModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
