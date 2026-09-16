@@ -189,6 +189,8 @@ export function createProductDocumentStorage(): StorageEngine {
 
 /**
  * Stockage dédié pour les logos de fournisseurs : `uploads/images/suppliers/:supplierId/logo-...`
+ *
+ * @returns {StorageEngine}
  */
 export function createSupplierLogoStorage(): StorageEngine {
   return createEntityStorage('images', 'suppliers', 'logo', 'id');
@@ -196,6 +198,8 @@ export function createSupplierLogoStorage(): StorageEngine {
 
 /**
  * Stockage dédié pour les images de catégories : `uploads/images/categories/:categoryId/category-...`
+ *
+ * @returns {StorageEngine}
  */
 export function createCategoryImageStorage(): StorageEngine {
   return createEntityStorage('images', 'categories', 'category', 'id');
@@ -203,6 +207,8 @@ export function createCategoryImageStorage(): StorageEngine {
 
 /**
  * Stockage dédié pour les logos de marques : `uploads/images/brands/:brandId/logo-...`
+ *
+ * @returns {StorageEngine}
  */
 export function createBrandLogoStorage(): StorageEngine {
   return createEntityStorage('images', 'brands', 'logo', 'id');
