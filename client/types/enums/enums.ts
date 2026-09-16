@@ -1,0 +1,63 @@
+export enum UserRole {
+  ADMINISTRATOR = 'ADMINISTRATOR',
+  MANAGER = 'MANAGER',
+  STOCK_KEEPER = 'STOCK_KEEPER',
+  SALES = 'SALES',
+  VIEWER = 'VIEWER',
+}
+
+export enum MovementType {
+  IN = 'IN',
+  OUT = 'OUT',
+  ADJUSTMENT = 'ADJUSTMENT',
+  TRANSFER = 'TRANSFER',
+  RETURN = 'RETURN',
+  LOSS = 'LOSS',
+  SCRAP = 'SCRAP',
+}
+
+export enum OrderType {
+  PURCHASE = 'PURCHASE',
+  SALE = 'SALE',
+}
+
+export enum OrderStatus {
+  DRAFT = 'DRAFT',
+  CONFIRMED = 'CONFIRMED',
+  SHIPPED = 'SHIPPED',
+  RECEIVED = 'RECEIVED',
+  PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+  REFUNDED = 'REFUNDED',
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  CARD = 'CARD',
+  MOBILE_MONEY = 'MOBILE_MONEY',
+  CHECK = 'CHECK',
+  CREDIT = 'CREDIT',
+}
+
+export enum ProductStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  DISCONTINUED = 'DISCONTINUED',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
+  COMING_SOON = 'COMING_SOON',
+}
+
+export enum WarehouseType {
+  MAIN = 'MAIN',
+  SECONDARY = 'SECONDARY',
+  VIRTUAL = 'VIRTUAL',
+  RETAIL_STORE = 'RETAIL_STORE',
+  TRANSIT = 'TRANSIT',
+}

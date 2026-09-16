@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function proxy() {
+/**
+ * Gestionnaire proxy de requêtes pour l'intégration de services backend.
+ *
+ * @author SINGO Yao Dieu Donnée
+ * @since 0.0.1
+ * @public
+ * @returns {NextResponse} Réponse HTTP Next.js suivante
+ */
+export function proxy(): NextResponse {
   return NextResponse.next();
 }
