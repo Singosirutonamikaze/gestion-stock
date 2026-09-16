@@ -1,0 +1,89 @@
+name: Security & Vulnerability Scan
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+  schedule:
+    - cron: '0 6 * * 1' # Tous les lundis à 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # 1. Analyse SAST avec GitHub CodeQL (JavaScript / TypeScript)
+  codeql-analysis:
+    name: CodeQL SAST Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # 2. Audit des dépendances (NPM Audit pour Server & Client)
+  dependency-audit:
+    name: NPM Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache-dependency-path: |
+            server/package.json
+            client/package.json
+
+      - name: Audit Backend Dependencies (Server)
+        run: |
+          echo "=== Auditing Server dependencies ==="
+          cd server
+          npm audit --audit-level=high || true
+
+      - name: Audit Frontend Dependencies (Client)
+        run: |
+          echo "=== Auditing Client dependencies ==="
+          cd client
+          npm audit --audit-level=high || true
+
+  # 3. Détection des secrets et vulnérabilités de fichiers avec Trivy
+  trivy-scan:
+    name: Trivy Security & Secret Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (FS & Secret scanning)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          secret-config: ''
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
