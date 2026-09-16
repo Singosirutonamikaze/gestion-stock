@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { ProductsController } from '../../../src/modules/products/controllers/products-controller';
@@ -7,7 +12,6 @@ import { ProductsService } from '../../../src/modules/products/services/products
 import { JwtAuthGuard } from '../../../src/core/guards/jwt-auth-guard';
 import { RolesGuard } from '../../../src/core/guards/roles-guard';
 import { ProductStatus } from '@prisma/client';
-import { ConflictException, NotFoundException } from '@nestjs/common';
 
 describe('ProductsController (e2e)', () => {
   let app: INestApplication<App>;
@@ -20,16 +24,16 @@ describe('ProductsController (e2e)', () => {
   };
 
   const mockProduct = {
-    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    id: 'a1b2c3d4-e5f6-4890-abcd-ef1234564890',
     sku: 'SKU-001',
-    barcode: '1234567890123',
+    barcode: '1234564890123',
     name: 'Café Arabica',
     slug: 'cafe-arabica',
     description: 'Café en grains 1kg',
     shortDescription: 'Café 1kg',
-    categoryId: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    categoryId: 'c1b2c3d4-e5f6-4890-abcd-ef1234564890',
     brandId: null,
-    supplierId: 's1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    supplierId: 's1b2c3d4-e5f6-4890-abcd-ef1234564890',
     unitPrice: 5000,
     costPrice: 3500,
     currency: 'XOF',
@@ -61,12 +65,12 @@ describe('ProductsController (e2e)', () => {
     createdAt: new Date('2026-08-25T08:00:00Z').toISOString(),
     updatedAt: new Date('2026-08-25T08:00:00Z').toISOString(),
     category: {
-      id: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      id: 'c1b2c3d4-e5f6-4890-abcd-ef1234564890',
       name: 'Boissons',
       slug: 'boissons',
     },
     supplier: {
-      id: 's1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      id: 's1b2c3d4-e5f6-4890-abcd-ef1234564890',
       name: 'Fournisseur Café',
       email: 'fournisseur@cafe.ci',
       phone: '+2250700000000',
@@ -194,7 +198,7 @@ describe('ProductsController (e2e)', () => {
     const validDto = {
       sku: 'SKU-001',
       name: 'Café Arabica',
-      categoryId: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      categoryId: 'c1b2c3d4-e5f6-4890-abcd-ef1234564890',
       unitPrice: 5000,
       costPrice: 3500,
     };

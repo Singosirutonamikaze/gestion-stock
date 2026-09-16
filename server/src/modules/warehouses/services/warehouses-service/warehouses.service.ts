@@ -95,7 +95,9 @@ export class WarehousesService {
     id: string,
     code?: string,
   ): Promise<void> {
-    if (!code) return;
+    if (!code) {
+      return;
+    }
     const formattedCode = code.toUpperCase().trim();
     const existing = await this.warehousesRepository.findByCode(formattedCode);
     if (existing && existing.id !== id) {

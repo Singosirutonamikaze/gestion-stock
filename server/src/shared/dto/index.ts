@@ -1,1 +1,1 @@
-export * from './pagination-query-dto/pagination-query.dto';
+export * from './pagination-query-dto';

@@ -4,10 +4,12 @@ import { CategoriesService } from '../../../src/modules/categories/services/cate
 
 describe('CategoriesController performance', () => {
   it('exécute 1000 appels findAll sans dépasser 250 ms', async () => {
-    const findAll = jest
-      .fn()
-      .mockResolvedValue([]) as jest.MockedFunction<CategoriesService['findAll']>;
-    const controller = new CategoriesController({ findAll } as CategoriesService);
+    const findAll = jest.fn().mockResolvedValue([]) as jest.MockedFunction<
+      CategoriesService['findAll']
+    >;
+    const controller = new CategoriesController({
+      findAll,
+    } as unknown as CategoriesService);
     const start = performance.now();
 
     for (let index = 0; index < 1000; index += 1) {
