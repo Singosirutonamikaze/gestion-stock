@@ -343,14 +343,14 @@ describe('OrdersService', () => {
         'user-1',
       );
 
-      expect(txMock.stockMovement.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          productId: 'prod-1',
-          warehouseId: 'wh-1',
-          type: MovementType.IN,
-          quantity: 5,
-        }),
-      });
+      expect(txMock.stockMovement.create).toHaveBeenCalled();
+      const createInCall = txMock.stockMovement.create.mock.calls[0] as [
+        { data: Prisma.StockMovementCreateInput },
+      ];
+      expect(createInCall[0].data.productId).toBe('prod-1');
+      expect(createInCall[0].data.warehouseId).toBe('wh-1');
+      expect(createInCall[0].data.type).toBe(MovementType.IN);
+      expect(createInCall[0].data.quantity).toBe(5);
 
       expect(txMock.stock.update).toHaveBeenCalledWith({
         where: { id: 'stock-1' },
@@ -382,14 +382,14 @@ describe('OrdersService', () => {
         'user-1',
       );
 
-      expect(txMock.stockMovement.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          productId: 'prod-1',
-          warehouseId: 'wh-1',
-          type: MovementType.OUT,
-          quantity: 5,
-        }),
-      });
+      expect(txMock.stockMovement.create).toHaveBeenCalled();
+      const createOutCall = txMock.stockMovement.create.mock.calls[0] as [
+        { data: Prisma.StockMovementCreateInput },
+      ];
+      expect(createOutCall[0].data.productId).toBe('prod-1');
+      expect(createOutCall[0].data.warehouseId).toBe('wh-1');
+      expect(createOutCall[0].data.type).toBe(MovementType.OUT);
+      expect(createOutCall[0].data.quantity).toBe(5);
 
       expect(txMock.stock.update).toHaveBeenCalledWith({
         where: { id: 'stock-1' },
