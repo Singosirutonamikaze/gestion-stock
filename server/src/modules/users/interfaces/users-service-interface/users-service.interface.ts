@@ -1,8 +1,12 @@
-import { UserResponseDto } from '../dto/user-response.dto';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { UserQueryDto } from '../dto/user-query.dto';
-import { Paginated } from '../../../shared/types/paginated.type';
+import { UserResponseDto } from '../../dto/user-response-dto';
+import { CreateUserDto } from '../../dto/create-user-dto';
+import { UpdateUserDto } from '../../dto/update-user-dto';
+import { UserQueryDto } from '../../dto/user-query-dto';
+import {
+  UserStatisticsDto,
+  UserStatsQueryDto,
+} from '../../dto/user-statistics-dto';
+import { Paginated } from '../../../../shared/types/paginated.type';
 
 /**
  * Contrat d'interface du service métier de gestion des utilisateurs (`UsersService`).
@@ -68,13 +72,11 @@ export interface IUsersService {
   /**
    * Récupère les statistiques et agrégations des utilisateurs du système.
    *
-   * @param {import('../dto/user-statistics.dto').UserStatsQueryDto} [query] - Filtres temporels optionnels
-   * @returns {Promise<import('../dto/user-statistics.dto').UserStatisticsDto>} Métriques consolidées
+   * @param {UserStatsQueryDto} [query] - Filtres temporels optionnels
+   * @returns {Promise<UserStatisticsDto>} Métriques consolidées
    * @async
    */
-  getStatistics(
-    query?: import('../dto/user-statistics.dto').UserStatsQueryDto,
-  ): Promise<import('../dto/user-statistics.dto').UserStatisticsDto>;
+  getStatistics(query?: UserStatsQueryDto): Promise<UserStatisticsDto>;
 
   /**
    * Met à jour la photo de profil (avatar) d'un utilisateur et nettoie l'ancien fichier le cas échéant.

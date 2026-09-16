@@ -83,7 +83,14 @@ describe('StockMovementsRepository', () => {
       expect(result).toEqual(mockMovement);
       expect(prisma.stockMovement.findUnique).toHaveBeenCalledWith({
         where: { id: 'mov-1' },
-        include: expect.any(Object),
+        include: {
+          product: { select: { id: true, sku: true, name: true } },
+          warehouse: { select: { id: true, code: true, name: true } },
+          relatedWarehouse: { select: { id: true, code: true, name: true } },
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
       });
     });
   });

@@ -1,7 +1,8 @@
 import { User } from '@prisma/client';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UserQueryDto } from '../dto/user-query.dto';
-import { IBaseRepository } from '../../../shared/interfaces/base-repository.interface';
+import { CreateUserDto } from '../../dto/create-user-dto';
+import { UserQueryDto } from '../../dto/user-query-dto';
+import { UserStatisticsDto } from '../../dto/user-statistics-dto';
+import { IBaseRepository } from '../../../../shared/interfaces/base-repository.interface';
 
 /**
  * Contrat d'interface du repository des utilisateurs (`UsersRepository`).
@@ -87,11 +88,8 @@ export interface IUsersRepository extends IBaseRepository<
    *
    * @param {Date} [startDate] - Date de début optionnelle
    * @param {Date} [endDate] - Date de fin optionnelle
-   * @returns {Promise<import('../dto/user-statistics.dto').UserStatisticsDto>} Métriques consolidées
+   * @returns {Promise<UserStatisticsDto>} Métriques consolidées
    * @async
    */
-  getStatistics(
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<import('../dto/user-statistics.dto').UserStatisticsDto>;
+  getStatistics(startDate?: Date, endDate?: Date): Promise<UserStatisticsDto>;
 }

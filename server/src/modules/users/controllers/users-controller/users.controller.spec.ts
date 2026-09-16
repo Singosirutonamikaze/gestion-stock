@@ -1,8 +1,8 @@
 import { UsersController } from './users.controller';
-import { UsersService } from '../services/users.service';
-import { UserRole } from '../../../shared/enums/user-role-enum';
-import { UserResponseDto } from '../dto/user-response.dto';
-import { Paginated } from '../../../shared/types/paginated.type';
+import { UsersService } from '../../services/users-service';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
+import { UserResponseDto } from '../../dto/user-response-dto';
+import { Paginated } from '../../../../shared/types/paginated.type';
 
 describe('UsersController', () => {
   let controller: UsersController;

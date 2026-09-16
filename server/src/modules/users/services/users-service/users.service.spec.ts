@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
-import { UsersRepository } from '../repositories/users.repository';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UsersRepository } from '../../repositories/users-repository';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 import { User } from '@prisma/client';
 
 jest.mock('bcrypt', () => ({
@@ -212,7 +212,9 @@ describe('UsersService', () => {
 
   describe('getStatistics', () => {
     it('doit appeler getStatistics du repository et retourner les métriques', async () => {
-      const byRole = Object.values(UserRole).reduce<Record<UserRole, number>>(
+      const byRole = (Object.values(UserRole) as UserRole[]).reduce<
+        Record<UserRole, number>
+      >(
         (acc, role, index) => {
           acc[role] = index + 1;
           return acc;

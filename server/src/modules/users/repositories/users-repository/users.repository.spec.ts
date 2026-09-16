@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersRepository } from './users.repository';
-import { PrismaService } from '../../../core/database/prisma-service';
-import { UserRole } from '../../../shared/enums/user-role-enum';
-import { UserQueryDto } from '../dto/user-query.dto';
+import { PrismaService } from '../../../../core/database/prisma-service';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
+import { UserQueryDto } from '../../dto/user-query-dto';
 import { User } from '@prisma/client';
 
 describe('UsersRepository', () => {

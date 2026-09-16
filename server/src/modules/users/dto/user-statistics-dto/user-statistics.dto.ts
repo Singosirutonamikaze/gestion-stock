@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsOptional } from 'class-validator';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 
 /**
  * DTO de filtrage pour les statistiques d'utilisateurs.

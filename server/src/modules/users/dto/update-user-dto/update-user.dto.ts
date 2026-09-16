@@ -7,7 +7,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 
 /**
  * DTO de mise à jour d'un compte utilisateur.

@@ -86,7 +86,7 @@ describe('WarehousesService', () => {
   });
 
   describe('create', () => {
-    it('doit créer un entrepôt', async () => {
+    it('doit créer un entrepôt sans manager', async () => {
       repository.findByCode.mockResolvedValue(null);
       repository.create.mockResolvedValue(mockWarehouse);
 
@@ -95,6 +95,25 @@ describe('WarehousesService', () => {
 
       expect(result).toEqual(mockWarehouse);
       expect(repository.create).toHaveBeenCalled();
+    });
+
+    it('doit créer un entrepôt avec managerId', async () => {
+      repository.findByCode.mockResolvedValue(null);
+      repository.create.mockResolvedValue(mockWarehouse);
+
+      const dto = {
+        name: 'Entrepôt Abidjan',
+        code: 'WH-ABJ-01',
+        managerId: 'mgr-1',
+      };
+      const result = await service.create(dto);
+
+      expect(result).toEqual(mockWarehouse);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          manager: { connect: { id: 'mgr-1' } },
+        }),
+      );
     });
 
     it('doit lever ConflictException si le code existe déjà', async () => {
@@ -119,6 +138,70 @@ describe('WarehousesService', () => {
 
       expect(result).toEqual(updated);
       expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('doit lever ConflictException si le nouveau code appartient à un autre entrepôt', async () => {
+      repository.findById.mockResolvedValue(mockWarehouse);
+      repository.findByCode.mockResolvedValue({
+        ...mockWarehouse,
+        id: 'other-wh-456',
+        code: 'WH-EXISTING',
+      });
+
+      await expect(
+        service.update('wh-123', { code: 'WH-EXISTING' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('doit accepter le même code pour le même entrepôt', async () => {
+      repository.findById.mockResolvedValue(mockWarehouse);
+      repository.findByCode.mockResolvedValue(mockWarehouse);
+      repository.update.mockResolvedValue(mockWarehouse);
+
+      const result = await service.update('wh-123', { code: 'WH-ABJ-01' });
+      expect(result).toEqual(mockWarehouse);
+    });
+
+    it('doit connecter un manager si managerId est fourni', async () => {
+      repository.findById.mockResolvedValue(mockWarehouse);
+      repository.update.mockResolvedValue(mockWarehouse);
+
+      await service.update('wh-123', { managerId: 'mgr-2' });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'wh-123',
+        expect.objectContaining({
+          manager: { connect: { id: 'mgr-2' } },
+        }),
+      );
+    });
+
+    it('doit déconnecter un manager si managerId est vide', async () => {
+      repository.findById.mockResolvedValue(mockWarehouse);
+      repository.update.mockResolvedValue(mockWarehouse);
+
+      await service.update('wh-123', { managerId: '' });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'wh-123',
+        expect.objectContaining({
+          manager: { disconnect: true },
+        }),
+      );
+    });
+
+    it('doit mettre à jour surfaceM2 correctement', async () => {
+      repository.findById.mockResolvedValue(mockWarehouse);
+      repository.update.mockResolvedValue(mockWarehouse);
+
+      await service.update('wh-123', { surfaceM2: 750 });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        'wh-123',
+        expect.objectContaining({
+          surfaceM2: new Prisma.Decimal(750),
+        }),
+      );
     });
   });
 

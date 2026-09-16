@@ -1,4 +1,4 @@
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 
 /**
  * Entité métier User — représentation du modèle utilisateur sans champs sensibles.

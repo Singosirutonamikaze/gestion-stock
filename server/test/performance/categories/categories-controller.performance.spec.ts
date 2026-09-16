@@ -9,7 +9,7 @@ describe('CategoriesController performance', () => {
     >;
     const controller = new CategoriesController({
       findAll,
-    } as CategoriesService);
+    } as unknown as CategoriesService);
     const start = performance.now();
 
     for (let index = 0; index < 1000; index += 1) {

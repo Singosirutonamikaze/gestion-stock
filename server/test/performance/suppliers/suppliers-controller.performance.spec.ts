@@ -7,7 +7,9 @@ describe('SuppliersController performance', () => {
     const findAll = jest.fn().mockResolvedValue([]) as jest.MockedFunction<
       SuppliersService['findAll']
     >;
-    const controller = new SuppliersController({ findAll } as SuppliersService);
+    const controller = new SuppliersController({
+      findAll,
+    } as unknown as SuppliersService);
     const start = performance.now();
 
     for (let index = 0; index < 1000; index += 1) {

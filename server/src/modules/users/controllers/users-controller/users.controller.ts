@@ -1,50 +1,50 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
-  HttpCode,
-  UseGuards,
-  ParseUUIDPipe,
-  UseInterceptors,
   UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
-  ApiParam,
-  ApiQuery,
   ApiBody,
   ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-import { UsersService } from '../services/users.service';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { UserResponseDto } from '../dto/user-response.dto';
-import { UserQueryDto } from '../dto/user-query.dto';
+import { UsersService } from '../../services/users-service';
+import { CreateUserDto } from '../../dto/create-user-dto';
+import { UpdateUserDto } from '../../dto/update-user-dto';
+import { UserResponseDto } from '../../dto/user-response-dto';
+import { UserQueryDto } from '../../dto/user-query-dto';
 import {
   UserStatisticsDto,
   UserStatsQueryDto,
-} from '../dto/user-statistics.dto';
-import { JwtAuthGuard } from '../../../core/guards/jwt-auth-guard';
-import { RolesGuard } from '../../../core/guards/roles-guard';
-import { Roles } from '../../../shared/decorators/roles-decorator';
-import { UserRole } from '../../../shared/enums/user-role-enum';
-import { Paginated } from '../../../shared/types/paginated.type';
-import { HTTP_STATUS } from '../../../shared/constants';
-import { ApiPaginatedResponse } from '../../../shared/decorators/api-paginated-response-decorator';
+} from '../../dto/user-statistics-dto';
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth-guard';
+import { RolesGuard } from '../../../../core/guards/roles-guard';
+import { Roles } from '../../../../shared/decorators/roles-decorator';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
+import { Paginated } from '../../../../shared/types/paginated.type';
+import { HTTP_STATUS } from '../../../../shared/constants';
+import { ApiPaginatedResponse } from '../../../../shared/decorators/api-paginated-response-decorator';
 import {
   createUserAvatarStorage,
   imageFileFilter,
   MAX_AVATAR_SIZE_BYTES,
-} from '../../../shared/utils/file-upload-util/file-upload.util';
+} from '../../../../shared/utils/file-upload-util/file-upload.util';
 
 /**
  * Contrôleur de gestion des utilisateurs (CRUD sécurisé réservé aux Administrateurs et Managers).

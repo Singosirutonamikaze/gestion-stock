@@ -2,7 +2,7 @@
 # Makefile Racine - Gestion de Stock (Client & Serveur)
 # ------------------------------------------------------------
 
-.PHONY: help install dev-server dev-client build lint test docker-up docker-down docker-logs db-migrate db-seed db-studio db-backup db-restore clean
+.PHONY: help install dev-server dev-client build lint test test-e2e test-perf test-all docker-up docker-down docker-logs db-migrate db-seed db-studio db-backup db-restore clean
 
 help:
 	@echo ""
@@ -18,6 +18,9 @@ help:
 	@echo "  make build        - Cette commande [ make build        ] Genere les fichiers de production optimises pour le client et le serveur"
 	@echo "  make lint         - Cette commande [ make lint         ] Analyse et corrige les erreurs de syntaxe et de style sur l'ensemble du code"
 	@echo "  make test         - Cette commande [ make test         ] Execute la suite complete des tests unitaires automatises du serveur"
+	@echo "  make test-e2e     - Cette commande [ make test-e2e     ] Execute la suite complete des tests E2E du serveur"
+	@echo "  make test-perf    - Cette commande [ make test-perf    ] Execute la suite des tests de performance du serveur"
+	@echo "  make test-all     - Cette commande [ make test-all     ] Execute l'ensemble des tests (unitaires, performance, E2E)"
 	@echo ""
 	@echo "  make docker-up    - Cette commande [ make docker-up    ] Initialise et demarre le conteneur Docker contenant la base de donnees PostgreSQL"
 	@echo "  make docker-down  - Cette commande [ make docker-down  ] Arrete et desactive proprement les conteneurs Docker en cours d'execution"
@@ -54,6 +57,15 @@ lint:
 
 test:
 	cd server && yarn test
+
+test-e2e:
+	cd server && yarn test:e2e
+
+test-perf:
+	cd server && yarn test:performance
+
+test-all:
+	cd server && yarn test && yarn test:performance && yarn test:e2e
 
 docker-up:
 	cd server && yarn docker:up

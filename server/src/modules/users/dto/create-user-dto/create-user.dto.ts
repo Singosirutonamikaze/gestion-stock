@@ -6,7 +6,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 
 /**
  * DTO de création d'un compte utilisateur (réservé aux Administrateurs).

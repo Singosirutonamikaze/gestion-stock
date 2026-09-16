@@ -12,7 +12,9 @@ describe('ProductsController performance', () => {
       limit: 20,
       totalPages: 0,
     }) as jest.MockedFunction<ProductsService['findAll']>;
-    const controller = new ProductsController({ findAll } as ProductsService);
+    const controller = new ProductsController({
+      findAll,
+    } as unknown as ProductsService);
     const query: ProductQueryDto = { page: 1, limit: 20 };
     const start = performance.now();
 

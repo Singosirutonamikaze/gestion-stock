@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 
 /**
  * DTO de réponse HTTP représentant un compte utilisateur sans le champ sensible password.

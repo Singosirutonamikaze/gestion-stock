@@ -1,20 +1,14 @@
 name: Continuous Integration
+
 on:
   push:
     branches:
-      - main
-      - production-*
-      - develop-*
+      - '**'
   pull_request:
     branches:
-      - main
-      - production-*
-      - develop-*
+      - '**'
 
 jobs:
-  # --- DÉTECTION DES DOSSIERS MODIFIÉS ---
-  # Évite de lancer les tests du serveur quand seul le client a changé
-  # (et inversement), utile vu vos branches dédiées par dossier.
   changes:
     name: Detect changed folders
     runs-on: ubuntu-latest
@@ -34,34 +28,70 @@ jobs:
             client:
               - 'client/**'
 
-  # --- VALIDATION DU SERVEUR (NestJS avec YARN) ---
   test-server:
-    name: NestJS Server Tests
+    name: NestJS Server Tests & Quality
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: gestion_stock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: ./server
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/gestion_stock_test?schema=public
+      JWT_SECRET: test_jwt_secret_key_ci_123456789
+      JWT_REFRESH_SECRET: test_jwt_refresh_secret_ci_123456789
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24' # Synchronisé avec votre version locale v24
+          node-version: '24'
           cache: 'yarn'
           cache-dependency-path: ./server/yarn.lock
+
       - name: Install Server Dependencies
         run: yarn install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: yarn prisma generate
+
+      - name: Run Server Build Validation
+        run: yarn run build
+
       - name: Run Server Linting
         run: yarn run lint
-      - name: Run Server Unit Tests
-        run: yarn test
 
-  # --- VALIDATION DU CLIENT (Next.js avec NPM) ---
+      - name: Run Server Unit Tests & Coverage
+        run: yarn test:cov
+
+      - name: Run Server Performance Tests
+        run: yarn test:performance
+
+      - name: Run Server End-to-End Tests
+        run: yarn test:e2e
+
   test-client:
-    name: Next.js Client Tests
+    name: Next.js Client Tests & Build
     needs: changes
     if: needs.changes.outputs.client == 'true'
     runs-on: ubuntu-latest
@@ -71,15 +101,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24' # Synchronisé avec votre version locale v24
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: ./client/package-lock.json
+
       - name: Install Client Dependencies
         run: npm ci
+
       - name: Run Client Linting
         run: npm run lint
+
       - name: Run Client Build Validation
         run: npm run build

@@ -6,29 +6,32 @@ import {
 } from '@nestjs/common';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { UsersRepository } from '../repositories/users.repository';
-import { UserMapper } from '../mappers/user.mapper';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { UserResponseDto } from '../dto/user-response.dto';
-import { UserQueryDto } from '../dto/user-query.dto';
+import { UsersRepository } from '../../repositories/users-repository';
+import { UserMapper } from '../../mappers/user-mapper';
+import { CreateUserDto } from '../../dto/create-user-dto';
+import { UpdateUserDto } from '../../dto/update-user-dto';
+import { UserResponseDto } from '../../dto/user-response-dto';
+import { UserQueryDto } from '../../dto/user-query-dto';
 import {
   UserStatisticsDto,
   UserStatsQueryDto,
-} from '../dto/user-statistics.dto';
-import { Paginated } from '../../../shared/types/paginated.type';
-import { PaginationUtil } from '../../../shared/utils/pagination-util/pagination.util';
-import { deleteUploadedFile } from '../../../shared/utils/file-upload-util/file-upload.util';
+} from '../../dto/user-statistics-dto';
+import { Paginated } from '../../../../shared/types/paginated.type';
+import { PaginationUtil } from '../../../../shared/utils/pagination-util/pagination.util';
+import { deleteUploadedFile } from '../../../../shared/utils/file-upload-util/file-upload.util';
+import { IUsersService } from '../../interfaces/users-service-interface';
 
 /**
  * Service métier pour la gestion des utilisateurs.
  *
+ * @implements {IUsersService}
+ * @see IUsersService
  * @author SINGO Yao Dieu Donnée
  * @since 0.0.1
  * @public
  */
 @Injectable()
-export class UsersService {
+export class UsersService implements IUsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   /**

@@ -1,5 +1,5 @@
 import { User } from '@prisma/client';
-import { UserResponseDto } from '../dto/user-response.dto';
+import { UserResponseDto } from '../../dto/user-response-dto';
 
 /**
  * Mapper responsable de la transformation sécurisée de l'entité Prisma User vers le DTO UserResponseDto.

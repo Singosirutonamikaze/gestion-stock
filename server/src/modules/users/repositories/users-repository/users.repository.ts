@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { PrismaService } from '../../../core/database/prisma-service';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UserQueryDto } from '../dto/user-query.dto';
-import { UserStatisticsDto } from '../dto/user-statistics.dto';
-import { UserRole } from '../../../shared/enums/user-role-enum';
-import { IUsersRepository } from '../interfaces/users-repository.interface';
+import { PrismaService } from '../../../../core/database/prisma-service';
+import { CreateUserDto } from '../../dto/create-user-dto';
+import { UserQueryDto } from '../../dto/user-query-dto';
+import { UserStatisticsDto } from '../../dto/user-statistics-dto';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
+import { IUsersRepository } from '../../interfaces/users-repository-interface';
 
 /**
  * Implémentation du repository des utilisateurs (`UsersRepository`) reposant sur l'ORM Prisma.
@@ -198,7 +198,9 @@ export class UsersRepository implements IUsersRepository {
         : Promise.resolve(undefined),
     ]);
 
-    const byRole = Object.values(UserRole).reduce<Record<UserRole, number>>(
+    const byRole = (Object.values(UserRole) as UserRole[]).reduce<
+      Record<UserRole, number>
+    >(
       (acc, role) => {
         acc[role] = 0;
         return acc;

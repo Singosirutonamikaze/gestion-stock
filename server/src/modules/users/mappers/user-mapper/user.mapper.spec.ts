@@ -1,5 +1,5 @@
 import { UserMapper } from './user.mapper';
-import { UserRole } from '../../../shared/enums/user-role-enum';
+import { UserRole } from '../../../../shared/enums/user-role-enum';
 import { User } from '@prisma/client';
 
 describe('UserMapper', () => {
