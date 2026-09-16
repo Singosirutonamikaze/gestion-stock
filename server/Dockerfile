@@ -37,4 +37,4 @@ USER node
 EXPOSE 3000
 
 # Exécute automatiquement les migrations Prisma sur la base PostgreSQL au démarrage puis démarre l'API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
