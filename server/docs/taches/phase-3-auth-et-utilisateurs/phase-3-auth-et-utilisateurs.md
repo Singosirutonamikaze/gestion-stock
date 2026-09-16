@@ -1,89 +1,230 @@
-# phase-3 : authentification et utilisateurs
+# Convention de structure des modules — version complète
 
-Cette phase met en place la gestion des comptes utilisateurs et la protection des routes par jeton JWT.
+Corrige le problème des sous-dossiers "un fichier = un dossier + un index.ts" et ajoute les couches manquantes : `interfaces/`, `types/`, `schemas/`.
 
 ---
 
-## taches
+## 1. Qui va où ?
 
-### 1. module users
+| Dossier         | Contenu                                                                 | Exemple                                      |
+|-----------------|--------------------------------------------------------------------------|-----------------------------------------------|
+| `dto/`          | Classes avec décorateurs `class-validator` — valident et documentent (Swagger) les entrées/sorties HTTP | `LoginDto`, `CreateUserDto`, `UserResponseDto` |
+| `entities/`     | Représentation du modèle métier/persistance (souvent miroir du modèle Prisma, enrichi de méthodes) | `User` entity                                |
+| `interfaces/`   | **Contrats** entre couches — ce qu'un service/repository *doit* implémenter, indépendamment de l'implémentation | `IUsersRepository`, `IAuthService`           |
+| `types/`        | Alias de types, unions, objets internes qui ne nécessitent ni validation ni classe (pas de décorateurs) | `JwtPayload`, `TokenPair`, `AuthenticatedRequest` |
+| `schemas/`      | Schémas de validation hors DTO HTTP (variables d'env avec `Joi`/`zod`, payload JWT, config) | `env.schema.ts`, `jwt-payload.schema.ts`     |
+| `mappers/`      | Fonctions pures de transformation entre entité ↔ DTO ↔ modèle Prisma      | `user.mapper.ts`                              |
+| `repositories/` | Accès aux données (Prisma), implémente les `interfaces/`                 | `users.repository.ts`                         |
+| `services/`     | Logique métier, orchestration                                            | `auth.service.ts`                             |
+| `controllers/`  | Routes HTTP, délèguent aux services                                      | `auth.controller.ts`                          |
+| `strategies/`   | Stratégies Passport                                                       | `jwt.strategy.ts`                              |
 
-Chemin : `src/modules/users/`
+**Règle de décision DTO vs Type vs Interface :**
+- Ça traverse une route HTTP (body/query/response) et doit être validé → **DTO**
+- C'est un contrat qu'une classe doit respecter (`implements X`) → **Interface**
+- C'est juste une forme de données interne, sans validation ni contrat d'implémentation → **Type**
 
-Implementer le CRUD complet :
+---
 
-| methode | route              | action                              | roles autorises |
-|---------|--------------------|-------------------------------------|-----------------|
-| `GET`   | `/users`           | lister tous les utilisateurs        | `ADMIN`         |
-| `GET`   | `/users/:id`       | consulter un utilisateur            | `ADMIN`         |
-| `POST`  | `/users`           | creer un utilisateur                | `ADMIN`         |
-| `PATCH` | `/users/:id`       | modifier un utilisateur             | `ADMIN`         |
-| `DELETE`| `/users/:id`       | supprimer (desactiver) un utilisateur | `ADMIN`       |
+## 2. Un seul `index.ts` par dossier (pas par fichier)
 
-Regles metier :
-- Le mot de passe est hache avec `bcrypt` avant persistance
-- Le champ `password` n'est jamais renvoye dans les reponses
-- La suppression est logique (`isActive = false`), pas physique
-
-### 2. module auth
-
-Chemin : `src/modules/auth/`
-
-Sous-dossiers :
-- `controllers/` : `AuthController`
-- `services/` : `AuthService`
-- `strategies/` : `JwtStrategy` (Passport)
-- `dto/` : `LoginDto`, `RegisterDto`, `AuthResponseDto`
-
-Endpoints :
-
-| methode | route             | action                               | protection |
-|---------|-------------------|--------------------------------------|------------|
-| `POST`  | `/auth/login`     | connexion, retourne un jeton JWT     | publique   |
-| `POST`  | `/auth/register`  | creation d'un compte                 | publique   |
-| `GET`   | `/auth/me`        | profil de l'utilisateur connecte     | JWT        |
-
-Le jeton JWT contient dans son payload :
-- `sub` : identifiant de l'utilisateur
-- `email`
-- `role`
-
-### 3. garde de roles et decorateur
-
-Chemin : `src/core/guards/` et `src/shared/decorators/`
-
-- `JwtAuthGuard` : verifie la validite du jeton JWT sur chaque route protegee
-- `RolesGuard` : compare le role du jeton avec les roles autorises sur la route, applique apres `JwtAuthGuard`
-- `@Roles(...roles)` : decorateur a placer sur les controleurs ou les methodes
-
-Les deux gardes sont enregistres globalement dans `AppModule`.
-
-### 4. decorateur `@CurrentUser`
-
-Chemin : `src/shared/decorators/`
-
-Creer un decorateur de parametre qui extrait l'utilisateur courant du contexte de la requete :
-
-```typescript
-@Get('me')
-getProfile(@CurrentUser() user: JwtPayload) { ... }
+```
+dto/
+├── login.dto.ts
+├── register.dto.ts
+├── auth-response.dto.ts
+└── index.ts          ← un seul barrel pour tout le dossier
 ```
 
-### 5. tests unitaires
+```typescript
+// dto/index.ts
+export * from './login.dto';
+export * from './register.dto';
+export * from './auth-response.dto';
+```
 
-Couvrir avec des tests unitaires :
-
-- `AuthService` : connexion avec identifiants valides, connexion avec mot de passe incorrect, connexion avec email inexistant
-- `UsersService` : creation avec email duplique, suppression logique, hachage du mot de passe
+Plus de dossier par fichier (`login-dto/login.dto.ts` + `login-dto/index.ts`) — c'est ce niveau intermédiaire qui est supprimé.
 
 ---
 
-## criteres de validation
+## 3. Arborescence complète — module `auth`
 
-- `POST /auth/login` avec des identifiants valides renvoie un jeton JWT
-- `POST /auth/login` avec un mot de passe incorrect renvoie `401`
-- `GET /auth/me` sans jeton renvoie `401`
-- `GET /users` avec un jeton `SALES` renvoie `403`
-- `GET /users` avec un jeton `ADMIN` renvoie la liste
-- Le champ `password` n'apparait dans aucune reponse
-- Les tests unitaires passent
+```
+src/modules/auth/
+├── auth.module.ts
+├── controllers/
+│   ├── auth.controller.ts
+│   ├── auth.controller.spec.ts
+│   └── index.ts
+├── services/
+│   ├── auth.service.ts
+│   ├── auth.service.spec.ts
+│   └── index.ts
+├── strategies/
+│   ├── jwt.strategy.ts
+│   ├── local.strategy.ts
+│   └── index.ts
+├── dto/
+│   ├── login.dto.ts
+│   ├── register.dto.ts
+│   ├── auth-response.dto.ts
+│   ├── refresh-token.dto.ts
+│   └── index.ts
+├── interfaces/
+│   ├── auth-service.interface.ts      # IAuthService
+│   ├── session-repository.interface.ts # ISessionRepository
+│   └── index.ts
+├── types/
+│   ├── jwt-payload.type.ts       # JwtPayload
+│   ├── token-pair.type.ts        # TokenPair
+│   └── index.ts
+└── schemas/
+    ├── jwt-payload.schema.ts     # validation runtime du payload décodé
+    └── index.ts
+```
+
+### Exemples de contenu
+
+**`types/jwt-payload.type.ts`**
+```typescript
+export type JwtPayload = {
+  sub: string;
+  email: string;
+  role: UserRole;
+  sid: string; // session id
+  iat?: number;
+  exp?: number;
+};
+```
+
+**`types/token-pair.type.ts`**
+```typescript
+export type TokenPair = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+};
+```
+
+**`interfaces/auth-service.interface.ts`**
+```typescript
+export interface IAuthService {
+  login(dto: LoginDto, meta: RequestMeta): Promise<TokenPair>;
+  register(dto: RegisterDto): Promise<TokenPair>;
+  refresh(token: string): Promise<TokenPair>;
+  logout(sessionId: string): Promise<void>;
+  logoutAll(userId: string): Promise<void>;
+}
+```
+
+**`interfaces/session-repository.interface.ts`**
+```typescript
+export interface ISessionRepository {
+  create(data: CreateSessionData): Promise<Session>;
+  findByHash(hash: string): Promise<Session | null>;
+  revoke(sessionId: string): Promise<void>;
+  revokeAllForUser(userId: string): Promise<void>;
+  listActiveForUser(userId: string): Promise<Session[]>;
+}
+```
+
+**`schemas/jwt-payload.schema.ts`** (validation runtime au décodage, en plus du typage statique — utile car un JWT décodé n'est pas garanti conforme au type TS à la compilation)
+```typescript
+import { z } from 'zod';
+
+export const jwtPayloadSchema = z.object({
+  sub: z.string().uuid(),
+  email: z.string().email(),
+  role: z.nativeEnum(UserRole),
+  sid: z.string().uuid(),
+});
+
+export type JwtPayloadValidated = z.infer<typeof jwtPayloadSchema>;
+```
+
+---
+
+## 4. Arborescence complète — module `users`
+
+```
+src/modules/users/
+├── users.module.ts
+├── controllers/
+│   ├── users.controller.ts
+│   ├── users.controller.spec.ts
+│   └── index.ts
+├── services/
+│   ├── users.service.ts
+│   ├── users.service.spec.ts
+│   └── index.ts
+├── repositories/
+│   ├── users.repository.ts
+│   └── index.ts
+├── entities/
+│   ├── user.entity.ts
+│   └── index.ts
+├── mappers/
+│   ├── user.mapper.ts
+│   ├── user.mapper.spec.ts
+│   └── index.ts
+├── dto/
+│   ├── create-user.dto.ts
+│   ├── update-user.dto.ts
+│   ├── user-response.dto.ts
+│   ├── user-query.dto.ts          # pagination/filtre GET /users
+│   └── index.ts
+├── interfaces/
+│   ├── users-service.interface.ts  # IUsersService
+│   ├── users-repository.interface.ts # IUsersRepository
+│   └── index.ts
+└── types/
+    ├── user-with-relations.type.ts # ex: User & { orders: Order[] }
+    └── index.ts
+```
+
+**`interfaces/users-repository.interface.ts`**
+```typescript
+export interface IUsersRepository {
+  findAll(query: UserQueryDto): Promise<User[]>;
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(data: CreateUserData): Promise<User>;
+  update(id: string, data: Partial<User>): Promise<User>;
+  softDelete(id: string): Promise<void>;
+}
+```
+
+**Pourquoi une interface pour le repository ?** Ça permet d'injecter un mock dans les tests unitaires du service sans toucher à Prisma (`providers: [{ provide: 'IUsersRepository', useValue: mockRepo }]`), et de changer d'implémentation (Prisma → autre ORM) sans toucher au service.
+
+---
+
+## 5. Dossier `shared/` — types et interfaces transverses
+
+À ajouter si pas déjà prévu :
+
+```
+src/shared/
+├── types/
+│   ├── request-meta.type.ts    # { ip, userAgent } réutilisé partout
+│   ├── paginated.type.ts
+│   └── index.ts
+└── interfaces/
+    ├── base-repository.interface.ts  # interface générique CRUD
+    └── index.ts
+```
+
+**`shared/types/request-meta.type.ts`**
+```typescript
+export type RequestMeta = {
+  ipAddress: string;
+  userAgent: string;
+};
+```
+
+---
+
+## 6. Règle à ajouter dans `docs/architectures/architecture.md`
+
+> Chaque module suit la structure : `controllers/`, `services/`, `repositories/`, `entities/`, `dto/`, `interfaces/`, `types/`, `mappers/` selon les besoins du module (tous ne sont pas obligatoires — `interfaces/` et `types/` uniquement si le module en a l'usage réel, pas par principe).
+> Chaque dossier contenant plusieurs fichiers du même type expose **un seul** `index.ts` en barrel. Pas de sous-dossier par fichier individuel.
+> Un fichier va dans `dto/` s'il traverse une route HTTP et nécessite une validation `class-validator`. Il va dans `types/` s'il s'agit d'une forme de données interne sans validation. Il va dans `interfaces/` s'il définit un contrat qu'une classe doit `implements`.

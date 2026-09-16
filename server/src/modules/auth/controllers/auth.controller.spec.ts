@@ -1,0 +1,122 @@
+import { AuthController } from './auth.controller';
+import { AuthService } from '../services/auth.service';
+import { UserRole } from '../../../shared/enums/user-role-enum';
+import { JwtPayload } from '../types/jwt-payload.type';
+
+describe('AuthController', () => {
+  let controller: AuthController;
+  let service: {
+    login: jest.Mock;
+    register: jest.Mock;
+    refresh: jest.Mock;
+    logout: jest.Mock;
+    logoutAll: jest.Mock;
+  };
+
+  const mockTokenPair = {
+    accessToken: 'access_token_mock',
+    refreshToken: 'refresh_token_mock',
+    expiresIn: 900,
+  };
+
+  beforeEach(() => {
+    service = {
+      login: jest.fn(),
+      register: jest.fn(),
+      refresh: jest.fn(),
+      logout: jest.fn(),
+      logoutAll: jest.fn(),
+    };
+    controller = new AuthController(service as unknown as AuthService);
+  });
+
+  it('doit être défini', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('login', () => {
+    it('doit appeler authService.login et retourner les tokens', async () => {
+      service.login.mockResolvedValue(mockTokenPair);
+
+      const loginDto = { email: 'test@example.com', password: 'Password123!' };
+      const result = await controller.login(loginDto);
+
+      expect(result).toEqual(mockTokenPair);
+      expect(service.login).toHaveBeenCalledWith(loginDto);
+    });
+  });
+
+  describe('register', () => {
+    it('doit appeler authService.register et retourner les tokens', async () => {
+      service.register.mockResolvedValue(mockTokenPair);
+
+      const registerDto = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'Kodjo',
+        lastName: 'Koffie',
+      };
+
+      const result = await controller.register(registerDto);
+
+      expect(result).toEqual(mockTokenPair);
+      expect(service.register).toHaveBeenCalledWith(registerDto);
+    });
+  });
+
+  describe('refresh', () => {
+    it('doit appeler authService.refresh avec le token fourni', async () => {
+      service.refresh.mockResolvedValue(mockTokenPair);
+
+      const dto = { refreshToken: 'refresh_token_mock' };
+      const result = await controller.refresh(dto);
+
+      expect(result).toEqual(mockTokenPair);
+      expect(service.refresh).toHaveBeenCalledWith('refresh_token_mock');
+    });
+  });
+
+  describe('logout', () => {
+    it('doit appeler authService.logout avec sub et le refreshToken', async () => {
+      service.logout.mockResolvedValue(undefined);
+
+      const user: JwtPayload = {
+        sub: 'usr-123',
+        email: 'test@example.com',
+        role: UserRole.ADMINISTRATOR,
+      };
+      const dto = { refreshToken: 'refresh_token_mock' };
+      const req = {
+        headers: { authorization: 'Bearer access_token_mock' },
+      };
+
+      const result = await controller.logout(user, dto, req);
+
+      expect(result).toEqual({ message: 'Déconnexion réussie' });
+      expect(service.logout).toHaveBeenCalledWith(
+        'usr-123',
+        'refresh_token_mock',
+        'access_token_mock',
+      );
+    });
+  });
+
+  describe('logoutAll', () => {
+    it("doit appeler authService.logoutAll avec l'id de l'utilisateur", async () => {
+      service.logoutAll.mockResolvedValue(undefined);
+
+      const user: JwtPayload = {
+        sub: 'usr-123',
+        email: 'test@example.com',
+        role: UserRole.ADMINISTRATOR,
+      };
+
+      const result = await controller.logoutAll(user);
+
+      expect(result).toEqual({
+        message: 'Toutes les sessions ont été révoquées',
+      });
+      expect(service.logoutAll).toHaveBeenCalledWith('usr-123');
+    });
+  });
+});
