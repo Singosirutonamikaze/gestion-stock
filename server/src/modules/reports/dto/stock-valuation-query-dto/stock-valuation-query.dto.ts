@@ -1,21 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
-
-export enum ReportFormat {
-  JSON = 'json',
-  CSV = 'csv',
-}
+import { ReportFormat } from '../stock-report-query-dto';
 
 /**
- * DTO de filtrage pour le rapport d'état du stock.
+ * DTO de filtrage pour le rapport de valorisation du stock.
  *
  * @author SINGO Yao Dieu Donnée
  * @since 0.0.1
  * @public
  */
-export class StockReportQueryDto {
+export class StockValuationQueryDto {
   @ApiPropertyOptional({
-    description: 'Filtrer par identifiant UUID d’entrepôt',
+    description: 'Filtrer la valorisation par identifiant UUID d’entrepôt',
     example: 'e5f6a7b8-c9d0-1234-efab-345678901234',
   })
   @IsOptional()

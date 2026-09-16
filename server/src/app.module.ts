@@ -16,6 +16,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { StockModule } from './modules/stock/stock.module';
 import { StockMovementsModule } from './modules/stock-movements/stock-movements.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 /**
  * Module racine de l'application assemblant l'ensemble des modules core et fonctionnels.
@@ -39,6 +40,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     StockModule,
     StockMovementsModule,
     OrdersModule,
+    ReportsModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
